@@ -9,11 +9,19 @@ def test_contract_has_identity_bound_creation():
     assert "https://\" + domain" in SOURCE
 
 def test_contract_has_diverse_evidence_and_replay_protection():
-    assert '"WAYBACK", "COMMON_CRAWL", "SIGNED_ORIGIN"' in SOURCE
+    assert '"WAYBACK", "ARQUIVO_PT", "SIGNED_ORIGIN"' in SOURCE
     assert "SOURCE_QUORUM = 2" in SOURCE
     assert "evidence round already consumed" in SOURCE
     assert "source in sources" in SOURCE
-    assert "def _allowed_locator" in SOURCE
+    assert "def _locator_timestamp" in SOURCE
+    assert "evidence target does not match the pact origin" in SOURCE
+    assert "evidence capture has already been used" in SOURCE
+    assert "evidence timestamp is outside the pact term" in SOURCE
+
+def test_contract_admits_a_verified_baseline_before_escrow():
+    assert "baseline = self._fetch_text(url)" in SOURCE
+    assert "baseline_verdict != HOLDS" in SOURCE
+    assert '"baseline_digest"' in SOURCE
 
 def test_contract_has_bounded_liveness_and_terminal_paths():
     assert "MAX_INDETERMINATE_ROUNDS = 3" in SOURCE
@@ -24,6 +32,7 @@ def test_contract_has_bounded_liveness_and_terminal_paths():
     assert "IDENTITY_TTL_SECONDS = 2592000" in SOURCE
     assert "int(pact.stake) + int(pact.challenge_bond)" in SOURCE
     assert "review deadline has ended" in SOURCE
+    assert "int(pact.monitoring_rounds) > 0 else REFUNDED" in SOURCE
 
 def test_intelligence_cannot_choose_payout():
     classify = SOURCE[SOURCE.index("def _classify"):SOURCE.index("def submit_evidence_round")]

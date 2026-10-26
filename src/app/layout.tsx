@@ -4,6 +4,7 @@ import "./runtime.css";
 import "./actions.css";
 import "./professional.css";
 import "./mobile-nav.css";
+import "./audit-fixes.css";
 import { WalletProvider } from "@/components/wallet-provider";
 
 export const metadata: Metadata = { title: "Accordium", description: "Evidence-diverse commitment assurance on GenLayer" };

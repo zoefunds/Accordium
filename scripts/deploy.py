@@ -11,10 +11,15 @@ def main() -> None:
         cwd=ROOT, check=True, text=True, capture_output=True,
     )
     output = result.stdout + result.stderr
-    match = re.search(r"0x[a-fA-F0-9]{40}", output)
+    patterns = (
+        r'Contract Address["\s:=]+(0x[a-fA-F0-9]{40})',
+        r'contract_address["\s:=]+(0x[a-fA-F0-9]{40})',
+        r'deployed[^\n]*(0x[a-fA-F0-9]{40})',
+    )
+    match = next((match for pattern in patterns if (match := re.search(pattern, output, re.IGNORECASE))), None)
     if not match:
         raise SystemExit("Deployment finalized but no contract address was found in CLI output.\n" + output)
-    address = match.group(0)
+    address = match.group(1)
     current = ENV.read_text() if ENV.exists() else ""
     line = f"NEXT_PUBLIC_ACCORDIUM_CONTRACT={address}"
     if "NEXT_PUBLIC_ACCORDIUM_CONTRACT=" in current:

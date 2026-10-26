@@ -15,7 +15,9 @@ export type ChainPact = {
   created_at: string; expires_at: string; last_round: string; breach_run: string;
   indeterminate_rounds: string; review_deadline: string; challenge_deadline: string;
   resolved_at: string; paid: string; returned: string;
+  baseline_digest: string; baseline_at: string; last_evidence_at: string; monitoring_rounds: string;
 };
+export type ChainEvidence = { round_id:string; source:string; target_url:string; locator:string; captured_at:string; digest:string; verdict:string; excerpt:string };
 export type Ledger = { total_in: string; total_out: string; currently_locked: string; pacts: string };
 export type Dashboard = { pacts: ChainPact[]; ledger: Ledger; configured: boolean };
 
@@ -39,6 +41,7 @@ export async function loadDashboard(): Promise<Dashboard> {
   const [pacts, ledger] = await Promise.all([readContract<ChainPact[]>("list_pacts"), readContract<Ledger>("get_ledger")]);
   return { pacts, ledger, configured: true };
 }
+export async function loadPact(id:string):Promise<{pact:ChainPact;evidence:ChainEvidence[]}>{const [pact,evidence]=await Promise.all([readContract<ChainPact>("get_pact",[id]),readContract<ChainEvidence[]>("pact_evidence",[id])]);return{pact,evidence}}
 export async function writeContract(account: `0x${string}`, functionName: string, args: CalldataEncodable[], value = 0n) {
   const writer = client(account); await writer.connect("studionet");
   return writer.writeContract({ address: configuredAddress(), functionName, args, value, consensusMaxRotations: 3 }) as Promise<TransactionHash>;

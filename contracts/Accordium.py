@@ -55,6 +55,7 @@ class Evidence:
     pact_id: str
     round_id: str
     source: str
+    target_url: str
     locator: str
     captured_at: str
     content_digest: str
@@ -71,11 +72,15 @@ class Pact:
     origin_url: str
     statement: str
     statement_digest: str
+    baseline_digest: str
+    baseline_at: str
     stake: u256
     created_at: str
     expires_at: str
     state: str
     last_round: str
+    last_evidence_at: str
+    monitoring_rounds: u256
     breach_run: u256
     indeterminate_rounds: u256
     review_deadline: str
@@ -91,6 +96,7 @@ class Accordium(gl.Contract):
     pact_ids: DynArray[str]
     evidence: DynArray[Evidence]
     used_rounds: TreeMap[str, bool]
+    used_evidence: TreeMap[str, bool]
     total_in: u256
     total_out: u256
 
@@ -121,6 +127,18 @@ class Accordium(gl.Contract):
     def _at_or_after(self, now: str, deadline: str) -> bool:
         return bool(now and deadline and now >= deadline)
 
+    def _stamp14(self, iso: str) -> str:
+        digits = ""
+        for char in iso:
+            if char >= "0" and char <= "9": digits = digits + char
+        return (digits + "00000000000000")[:14]
+
+    def _timestamp14(self, value: str) -> str:
+        stamp = str(value or "").strip()
+        if len(stamp) != 14 or not stamp.isdigit():
+            raise gl.vm.UserError("evidence timestamp must be exactly 14 digits")
+        return stamp
+
     def _domain(self, value: str) -> str:
         domain = str(value or "").strip().lower().rstrip(".")
         if len(domain) < 4 or len(domain) > 253 or not re.match(r"^[a-z0-9.-]+$", domain):
@@ -133,6 +151,15 @@ class Accordium(gl.Contract):
     def _pay(self, receiver: Address, amount: u256) -> None:
         if int(amount) > 0:
             gl.message.emit_transfer(receiver, amount)
+
+    def _fetch_text(self, url: str) -> dict:
+        def retrieve() -> dict:
+            response = gl.nondet.web.request(url, method="GET", headers={"Accept-Encoding": "identity"})
+            if response.status != 200 or len(response.text) > MAX_BODY_CHARS:
+                return {"ok": False, "body": "", "digest": ""}
+            body = str(response.text)
+            return {"ok": True, "body": body, "digest": hashlib.sha256(body.encode()).hexdigest()}
+        return gl.eq_principle.strict_eq(retrieve)
 
     @gl.public.write
     def begin_identity(self, domain: str) -> str:
@@ -205,9 +232,17 @@ class Accordium(gl.Contract):
         if payee == sender:
             raise gl.vm.UserError("publisher and beneficiary must differ")
         now = self._now()
+        baseline = self._fetch_text(url)
+        if not baseline["ok"]:
+            raise gl.vm.UserError("origin baseline could not be admitted")
+        baseline_finding = self._classify(text, baseline["body"])
+        baseline_verdict, _ = self._validated_finding(baseline_finding, baseline["body"])
+        if baseline_verdict != HOLDS:
+            raise gl.vm.UserError("the published baseline does not contain a holding commitment")
         self.pacts[key] = Pact(key, sender, payee, domain, url, text,
-            hashlib.sha256(text.lower().encode()).hexdigest(), u256(stake), now,
-            self._add_seconds(now, term * 86400), LIVE, "", u256(0), u256(0), "", "", u256(0), "", u256(0), u256(0))
+            hashlib.sha256(text.lower().encode()).hexdigest(), str(baseline["digest"]), now,
+            u256(stake), now, self._add_seconds(now, term * 86400), LIVE, "", "", u256(0),
+            u256(0), u256(0), "", "", u256(0), "", u256(0), u256(0))
         self.pact_ids.append(key)
         self.total_in = u256(int(self.total_in) + stake)
         return "pact opened with identity-bound publisher"
@@ -232,14 +267,26 @@ class Accordium(gl.Contract):
                 raise gl.vm.UserError("breach excerpt is not present in admitted evidence")
         return verdict, excerpt
 
-    def _allowed_locator(self, source: str, locator: str, pact: Pact) -> bool:
+    def _locator_timestamp(self, source: str, locator: str, pact: Pact) -> str:
         if source == "WAYBACK":
-            return locator.startswith("https://web.archive.org/web/")
-        if source == "COMMON_CRAWL":
-            return locator.startswith("https://data.commoncrawl.org/")
-        if source == "SIGNED_ORIGIN":
-            return locator.startswith("https://" + pact.domain + "/")
-        return False
+            prefix = "https://web.archive.org/web/"
+        elif source == "ARQUIVO_PT":
+            prefix = "https://arquivo.pt/wayback/"
+        elif source == "SIGNED_ORIGIN":
+            return ""
+        else:
+            raise gl.vm.UserError("unknown evidence adapter")
+        if not locator.startswith(prefix):
+            raise gl.vm.UserError("evidence locator does not belong to its declared adapter")
+        tail = locator[len(prefix):]
+        stamp = tail[:14]
+        self._timestamp14(stamp)
+        remainder = tail[14:]
+        if remainder.startswith("id_/"): remainder = remainder[4:]
+        elif remainder.startswith("/"): remainder = remainder[1:]
+        if remainder != pact.origin_url:
+            raise gl.vm.UserError("archive evidence is not bound to the pact origin URL")
+        return stamp
 
     @gl.public.write
     def submit_evidence_round(self, pact_id: str, round_id: str, evidence_json: str) -> str:
@@ -262,32 +309,47 @@ class Accordium(gl.Contract):
         staged = []
         for claim in claims:
             source = str(claim["source"])
-            if source not in ("WAYBACK", "COMMON_CRAWL", "SIGNED_ORIGIN") or source in sources:
+            if source not in ("WAYBACK", "ARQUIVO_PT", "SIGNED_ORIGIN") or source in sources:
                 raise gl.vm.UserError("evidence adapters must be unique and approved")
             locator = str(claim["locator"])
-            if not self._allowed_locator(source, locator, pact):
-                raise gl.vm.UserError("evidence locator does not belong to its declared adapter")
+            target_url = str(claim.get("target_url", ""))
+            if target_url != pact.origin_url:
+                raise gl.vm.UserError("evidence target does not match the pact origin")
+            stamp = self._timestamp14(str(claim["captured_at"]))
+            locator_stamp = self._locator_timestamp(source, locator, pact)
+            if source == "SIGNED_ORIGIN":
+                if locator != pact.origin_url:
+                    raise gl.vm.UserError("signed-origin evidence must use the exact pact origin")
+            elif locator_stamp != stamp:
+                raise gl.vm.UserError("evidence timestamp does not match its archive locator")
+            if stamp < self._stamp14(pact.created_at) or stamp > self._stamp14(pact.expires_at):
+                raise gl.vm.UserError("evidence timestamp is outside the pact term")
             expected_digest = str(claim["digest"]).lower()
-            def retrieve() -> dict:
-                response = gl.nondet.web.request(locator, method="GET", headers={})
-                if response.status != 200 or len(response.text) > MAX_BODY_CHARS:
-                    return {"ok": False, "body": "", "digest": ""}
-                digest = hashlib.sha256(response.text.encode()).hexdigest()
-                return {"ok": digest == expected_digest, "body": response.text, "digest": digest}
-            fetched = gl.eq_principle.strict_eq(retrieve)
-            if not fetched["ok"]:
+            fetched = self._fetch_text(locator)
+            if not fetched["ok"] or fetched["digest"] != expected_digest:
                 raise gl.vm.UserError("source payload failed digest admission")
+            replay = pact.pact_id + "|" + source + "|" + stamp + "|" + expected_digest
+            if replay in self.used_evidence:
+                raise gl.vm.UserError("evidence capture has already been used")
             finding = self._classify(pact.statement, fetched["body"])
             verdict, excerpt = self._validated_finding(finding, fetched["body"])
             sources[source] = True
             verdicts[verdict] = int(verdicts.get(verdict, 0)) + 1
-            staged.append(Evidence(pact.pact_id, str(round_id), source, locator, str(claim["captured_at"]), expected_digest, verdict, excerpt))
+            staged.append(Evidence(pact.pact_id, str(round_id), source, target_url, locator, stamp, expected_digest, verdict, excerpt))
         agreed = INDETERMINATE
         for verdict in (HOLDS, WEAKENED, ABSENT):
             if int(verdicts.get(verdict, 0)) >= SOURCE_QUORUM: agreed = verdict
-        for item in staged: self.evidence.append(item)
+        round_stamp = ""
+        for item in staged:
+            if pact.last_evidence_at and item.captured_at <= pact.last_evidence_at:
+                raise gl.vm.UserError("evidence rounds must advance chronologically")
+            self.evidence.append(item)
+            self.used_evidence[pact.pact_id + "|" + item.source + "|" + item.captured_at + "|" + item.content_digest] = True
+            if item.captured_at > round_stamp: round_stamp = item.captured_at
         self.used_rounds[replay_key] = True
         pact.last_round = str(round_id)
+        pact.last_evidence_at = round_stamp
+        pact.monitoring_rounds = u256(int(pact.monitoring_rounds) + 1)
         if pact.state == CHALLENGED and agreed == HOLDS:
             amount = int(pact.stake) + int(pact.challenge_bond)
             self._pay(pact.publisher, u256(amount)); pact.returned = u256(amount)
@@ -334,7 +396,8 @@ class Accordium(gl.Contract):
         pact = self.pacts[str(pact_id)]
         now = self._now()
         if pact.state == LIVE and now >= pact.expires_at:
-            amount = int(pact.stake); self._pay(pact.publisher, u256(amount)); pact.returned = u256(amount); pact.state = RELEASED
+            amount = int(pact.stake); self._pay(pact.publisher, u256(amount)); pact.returned = u256(amount)
+            pact.state = RELEASED if int(pact.monitoring_rounds) > 0 else REFUNDED
         elif pact.state == REVIEW and now >= pact.review_deadline:
             amount = int(pact.stake); self._pay(pact.beneficiary, u256(amount)); pact.paid = u256(amount); pact.state = PAID
         elif pact.state == CHALLENGED and now >= pact.challenge_deadline:
@@ -354,14 +417,28 @@ class Accordium(gl.Contract):
         return {"id": pact.pact_id, "publisher": pact.publisher.as_hex, "beneficiary": pact.beneficiary.as_hex,
             "domain": pact.domain, "origin_url": pact.origin_url, "statement": pact.statement,
             "statement_digest": pact.statement_digest, "stake": str(int(pact.stake)), "state": pact.state,
+            "baseline_digest": pact.baseline_digest, "baseline_at": pact.baseline_at,
             "created_at": pact.created_at, "expires_at": pact.expires_at, "last_round": pact.last_round,
             "breach_run": str(int(pact.breach_run)), "indeterminate_rounds": str(int(pact.indeterminate_rounds)),
+            "last_evidence_at": pact.last_evidence_at, "monitoring_rounds": str(int(pact.monitoring_rounds)),
             "review_deadline": pact.review_deadline, "challenge_deadline": pact.challenge_deadline,
             "resolved_at": pact.resolved_at, "paid": str(int(pact.paid)), "returned": str(int(pact.returned))}
 
     @gl.public.view
     def list_pacts(self) -> list:
         return [self.get_pact(key) for key in self.pact_ids]
+
+    @gl.public.view
+    def pact_evidence(self, pact_id: str) -> list:
+        key = str(pact_id)
+        if key not in self.pacts: raise gl.vm.UserError("unknown pact")
+        out = []
+        for item in self.evidence:
+            if item.pact_id == key:
+                out.append({"round_id": item.round_id, "source": item.source, "target_url": item.target_url,
+                    "locator": item.locator, "captured_at": item.captured_at, "digest": item.content_digest,
+                    "verdict": item.verdict, "excerpt": item.excerpt})
+        return out
 
     @gl.public.view
     def get_ledger(self) -> dict:

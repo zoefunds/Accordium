@@ -16,13 +16,13 @@ Publisher proofs expire after 30 days. Opening another pact after that boundary 
 
 ## Evidence envelope
 
-Each claim includes an adapter name, immutable locator, capture time, and SHA-256 digest. The contract retrieves the locator inside an equivalence-principle block, checks its size and digest, then asks the model only whether the precise statement still holds.
+Opening a pact first admits a verified live baseline for the exact bonded page. Each later claim includes an adapter name, the exact pact URL, immutable locator, archive-derived capture time, and SHA-256 digest. The contract binds the locator to the pact origin, constrains it to the monitoring term, retrieves it inside an equivalence-principle block, checks its size and digest, and consumes the capture tuple only once before asking whether the precise statement still holds.
 
 A round accepts one vote per adapter and requires two matching votes. Split or unavailable evidence is `INDETERMINATE`, never success or breach.
 
 ## Liveness policy
 
-Uncertainty is bounded. After three indeterminate rounds, the stake returns to the publisher. A breach review lasts seven days. A publisher may place a ten-percent challenge bond, but a challenge also has a seven-day terminal deadline. `finalize` is permissionless.
+Uncertainty is bounded. After three indeterminate rounds, the stake returns to the publisher. A breach review lasts seven days. A publisher may place a ten-percent challenge bond, but a challenge also has a seven-day terminal deadline. `finalize` is permissionless. Expiry without an admitted monitoring round is a refund, never a successful release.
 
 ## Accounting invariant
 

@@ -13,7 +13,7 @@ Accordium is a GenLayer protocol for commitments that carry financial assurance.
 Public statements are easy to edit and difficult to enforce. Accordium turns a published commitment into a transparent pact with four guarantees:
 
 - **Publisher authenticity.** A wallet-specific challenge at `/.well-known/accordium.json` binds the wallet staking value to the domain making the statement.
-- **Evidence diversity.** A decision needs agreement from at least two distinct adapters: Internet Archive, Common Crawl, or a signed origin record.
+- **Evidence diversity.** A decision needs agreement from at least two distinct adapters: Internet Archive, Arquivo.pt, or the identity-bound live origin.
 - **Narrow intelligence.** Validators classify whether a statement holds, weakened, disappeared, or cannot be determined. They never decide payouts or see a payout instruction.
 - **Capital liveness.** Three indeterminate rounds trigger a safety refund. Reviews and challenges have hard deadlines and permissionless terminal calls.
 
