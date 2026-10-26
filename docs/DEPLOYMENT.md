@@ -2,6 +2,7 @@
 
 ## Current StudioNet release
 
+- Application: `https://accordium-eight.vercel.app`
 - Contract: `0x88B88571D53F9dCE4941339027dF0423D6703F52`
 - Transaction: `0x259c76e01fa41d1d7522f532f6c4ce296e442b42ccedb2c2b853ce7d05883d4f`
 - Deployer: `0x7452084E1Cf767bf19C743051cFf27D9F7A87a4D`
