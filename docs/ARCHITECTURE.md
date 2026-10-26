@@ -12,6 +12,8 @@ Accordium separates five concerns:
 
 No evidence adapter can settle a pact alone. No model output can transfer value directly. A frontend is optional; every transition is callable on the contract.
 
+Publisher proofs expire after 30 days. Opening another pact after that boundary requires a fresh domain verification, limiting the impact of a transferred or compromised domain.
+
 ## Evidence envelope
 
 Each claim includes an adapter name, immutable locator, capture time, and SHA-256 digest. The contract retrieves the locator inside an equivalence-principle block, checks its size and digest, then asks the model only whether the precise statement still holds.

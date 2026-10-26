@@ -21,6 +21,9 @@ def test_contract_has_bounded_liveness_and_terminal_paths():
     assert "def finalize" in SOURCE
     assert "pact.state == CHALLENGED and agreed == HOLDS" in SOURCE
     assert "currently_locked" in SOURCE
+    assert "IDENTITY_TTL_SECONDS = 2592000" in SOURCE
+    assert "int(pact.stake) + int(pact.challenge_bond)" in SOURCE
+    assert "review deadline has ended" in SOURCE
 
 def test_intelligence_cannot_choose_payout():
     classify = SOURCE[SOURCE.index("def _classify"):SOURCE.index("def submit_evidence_round")]

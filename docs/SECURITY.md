@@ -16,7 +16,7 @@ Archived documents are untrusted. The prompt explicitly marks their content as e
 
 ## Operational assumptions
 
-Two archive operators may still share upstream data. Operators should choose adapters with independent storage and retrieval paths. Domain proof establishes control at verification time; long-duration pacts should require periodic re-verification in a later protocol version.
+Two archive operators may still share upstream data. Operators should choose adapters with independent storage and retrieval paths. Domain proof establishes control at verification time and expires after 30 days for new pact creation. Existing pacts retain their immutable publisher identity.
 
 ## Reporting
 

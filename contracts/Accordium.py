@@ -28,6 +28,7 @@ MAX_TERM_DAYS = 1095
 BREACH_RUN = 2
 SOURCE_QUORUM = 2
 MAX_INDETERMINATE_ROUNDS = 3
+IDENTITY_TTL_SECONDS = 2592000
 REVIEW_WINDOW_SECONDS = 604800
 CHALLENGE_WINDOW_SECONDS = 604800
 MAX_BODY_CHARS = 180000
@@ -117,6 +118,9 @@ class Accordium(gl.Contract):
                 if (year % 4 == 0 and year % 100 != 0) or year % 400 == 0: days[1] = 29
         return "%04d-%02d-%02dT%02d:%02d:%02dZ" % (year, month, day, hour, minute, second)
 
+    def _at_or_after(self, now: str, deadline: str) -> bool:
+        return bool(now and deadline and now >= deadline)
+
     def _domain(self, value: str) -> str:
         domain = str(value or "").strip().lower().rstrip(".")
         if len(domain) < 4 or len(domain) > 253 or not re.match(r"^[a-z0-9.-]+$", domain):
@@ -183,6 +187,8 @@ class Accordium(gl.Contract):
         identity = self.identities[identity_key]
         if not identity.active:
             raise gl.vm.UserError("publisher identity is not verified")
+        if self._at_or_after(self._now(), self._add_seconds(identity.verified_at, IDENTITY_TTL_SECONDS)):
+            raise gl.vm.UserError("publisher identity proof has expired; verify it again")
         url = str(origin_url).strip()
         if not url.startswith("https://" + domain + "/"):
             raise gl.vm.UserError("origin must be an HTTPS page beneath the verified domain")
@@ -241,6 +247,10 @@ class Accordium(gl.Contract):
         pact = self.pacts[str(pact_id)]
         if pact.state not in (LIVE, CHALLENGED):
             raise gl.vm.UserError("pact does not accept evidence in its current state")
+        if pact.state == LIVE and self._at_or_after(self._now(), pact.expires_at):
+            raise gl.vm.UserError("pact term has ended; finalize it")
+        if pact.state == CHALLENGED and self._at_or_after(self._now(), pact.challenge_deadline):
+            raise gl.vm.UserError("challenge evidence deadline has ended; finalize it")
         replay_key = pact.pact_id + "|" + str(round_id)
         if replay_key in self.used_rounds:
             raise gl.vm.UserError("evidence round already consumed")
@@ -297,7 +307,7 @@ class Accordium(gl.Contract):
         else:
             pact.indeterminate_rounds = u256(int(pact.indeterminate_rounds) + 1)
             if int(pact.indeterminate_rounds) >= MAX_INDETERMINATE_ROUNDS:
-                amount = int(pact.stake); self._pay(pact.publisher, u256(amount))
+                amount = int(pact.stake) + int(pact.challenge_bond); self._pay(pact.publisher, u256(amount))
                 pact.returned = u256(amount); pact.state = REFUNDED; pact.resolved_at = self._now()
                 self.total_out = u256(int(self.total_out) + amount)
         self.pacts[pact.pact_id] = pact
@@ -308,6 +318,8 @@ class Accordium(gl.Contract):
         pact = self.pacts[str(pact_id)]
         if pact.state != REVIEW or gl.message.sender_address != pact.publisher:
             raise gl.vm.UserError("only the publisher may challenge an active review")
+        if self._at_or_after(self._now(), pact.review_deadline):
+            raise gl.vm.UserError("review deadline has ended; finalize it")
         required = max(1, int(pact.stake) // 10)
         if int(gl.message.value) != required:
             raise gl.vm.UserError("challenge bond must equal ten percent of stake")
@@ -360,4 +372,5 @@ class Accordium(gl.Contract):
     def get_limits(self) -> dict:
         return {"source_quorum": str(SOURCE_QUORUM), "breach_run": str(BREACH_RUN),
                 "max_indeterminate_rounds": str(MAX_INDETERMINATE_ROUNDS),
+                "identity_ttl_seconds": str(IDENTITY_TTL_SECONDS),
                 "review_window_seconds": str(REVIEW_WINDOW_SECONDS), "max_body_chars": str(MAX_BODY_CHARS)}
