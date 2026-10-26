@@ -12,8 +12,8 @@ def main() -> None:
     )
     output = result.stdout + result.stderr
     patterns = (
-        r'Contract Address["\s:=]+(0x[a-fA-F0-9]{40})',
-        r'contract_address["\s:=]+(0x[a-fA-F0-9]{40})',
+        r'Contract Address[\'"\s:=]+(0x[a-fA-F0-9]{40})',
+        r'contract_address[\'"\s:=]+(0x[a-fA-F0-9]{40})',
         r'deployed[^\n]*(0x[a-fA-F0-9]{40})',
     )
     match = next((match for pattern in patterns if (match := re.search(pattern, output, re.IGNORECASE))), None)

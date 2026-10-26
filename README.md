@@ -5,8 +5,8 @@ Accordium is a GenLayer protocol for commitments that carry financial assurance.
 ## StudioNet deployment
 
 - Live application: `https://accordium-eight.vercel.app`
-- Contract: `0x88B88571D53F9dCE4941339027dF0423D6703F52`
-- Deployment transaction: `0x259c76e01fa41d1d7522f532f6c4ce296e442b42ccedb2c2b853ce7d05883d4f`
+- Contract: `0x1b24bbB2c8441E38Df159EbE1bB7a6F80DD515ce`
+- Deployment transaction: `0x3b9ab56bd8994d25b2cd4b1298005cca84674815d9121dffd08b37c52d395d61`
 
 ## Why Accordium exists
 
@@ -85,6 +85,6 @@ npm run build
 - `submit_evidence_round(id, round_id, evidence_json)`
 - `challenge(id)`
 - `finalize(id)`
-- `get_pact(id)`, `list_pacts()`, `get_ledger()`, `get_limits()`
+- `get_pact(id)`, `pact_evidence(id)`, `list_pacts()`, `get_ledger()`, `get_limits()`
 
 See [Architecture](docs/ARCHITECTURE.md), [Security](docs/SECURITY.md), and [Deployment](docs/DEPLOYMENT.md) before deploying.
