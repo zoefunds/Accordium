@@ -1,0 +1,34 @@
+{
+  "name": "accordium",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "verify": "npm run lint && npm test && npm run build"
+    ,"deploy:studionet": "python3 scripts/deploy.py"
+  },
+  "dependencies": {
+    "genlayer-js": "1.1.8",
+    "lucide-react": "^0.468.0",
+    "next": "16.4.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@types/node": "^22.12.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.3",
+    "jsdom": "^25.0.1",
+    "typescript": "^5",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}
