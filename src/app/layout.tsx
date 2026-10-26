@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./runtime.css";
 import "./actions.css";
+import "./professional.css";
+import "./mobile-nav.css";
 import { WalletProvider } from "@/components/wallet-provider";
 
 export const metadata: Metadata = { title: "Accordium", description: "Evidence-diverse commitment assurance on GenLayer" };

@@ -1,0 +1,2 @@
+import { SiteHeader } from "@/components/site-header"; import { SiteFooter } from "@/components/site-footer"; import { RegistryClient } from "@/components/registry-client";
+export default function RegistryPage(){return <><SiteHeader/><main className="page-shell"><header className="page-hero"><p className="kicker">On-chain assurance index</p><h1>Public registry</h1><p>Inspect every active and resolved commitment directly from the Accordium StudioNet contract.</p></header><RegistryClient/></main><SiteFooter/></>}
