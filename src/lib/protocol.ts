@@ -15,3 +15,4 @@ export const demoPacts: Pact[] = [
 
 export const stateLabel = (state: PactState) => ({ LIVE: "Monitoring", REVIEW: "Evidence review", CHALLENGED: "Challenge open", PAID: "Paid", RELEASED: "Completed", REFUNDED: "Safety refund" }[state]);
 export const shorten = (value: string, size = 34) => value.length <= size ? value : `${value.slice(0, size - 1)}…`;
+export const challengeBond = (stake: string): bigint => { const value = BigInt(stake); const tenth = value / 10n; return tenth > 0n ? tenth : 1n; };

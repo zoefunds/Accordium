@@ -20,3 +20,16 @@ def test_unverified_publisher_cannot_open_pact(direct_deploy, direct_vm):
         contract.open_pact("ACD-1", "example.com", "https://example.com/promise",
                            "This concrete public commitment remains in force for all users.",
                            "0x1111111111111111111111111111111111111111", 30)
+
+def test_breach_excerpt_must_exist_in_admitted_body(direct_deploy, direct_vm):
+    contract = direct_deploy("Accordium.py")
+    with direct_vm.expect_revert("not present"):
+        contract._validated_finding({"verdict": "ABSENT", "excerpt": "invented text"},
+                                    "The admitted page contains different words.")
+
+def test_grounded_breach_finding_is_accepted(direct_deploy):
+    contract = direct_deploy("Accordium.py")
+    assert contract._validated_finding(
+        {"verdict": "WEAKENED", "excerpt": "only where practical"},
+        "The service now applies only where practical for operators.",
+    ) == ("WEAKENED", "only where practical")

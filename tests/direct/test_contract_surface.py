@@ -27,3 +27,7 @@ def test_intelligence_cannot_choose_payout():
     assert "stake" not in classify
     assert "beneficiary" not in classify
     assert "emit_transfer" not in classify
+
+def test_breach_excerpt_is_deterministically_grounded():
+    assert "def _validated_finding" in SOURCE
+    assert "breach excerpt is not present in admitted evidence" in SOURCE
