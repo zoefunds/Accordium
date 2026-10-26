@@ -4,6 +4,7 @@ import type { CalldataEncodable } from "genlayer-js/types";
 
 export const runtime = "nodejs";
 const endpoint = process.env.NEXT_PUBLIC_GENLAYER_ENDPOINT ?? "https://studio.genlayer.com/api";
+const deployedContract = "0x88B88571D53F9dCE4941339027dF0423D6703F52" as const;
 const allowed = new Set(["list_pacts", "get_pact", "get_ledger", "get_limits"]);
 type Encoded = string | number | boolean | null | Encoded[] | { __accordiumBigInt: string } | { [key: string]: Encoded };
 function decode(value: Encoded): CalldataEncodable {
@@ -16,7 +17,7 @@ function decode(value: Encoded): CalldataEncodable {
 }
 export async function POST(request: Request) {
   try {
-    const address = process.env.NEXT_PUBLIC_ACCORDIUM_CONTRACT as `0x${string}` | undefined;
+    const address = (process.env.NEXT_PUBLIC_ACCORDIUM_CONTRACT || deployedContract) as `0x${string}`;
     if (!address || /^0x0{40}$/i.test(address)) return Response.json({ error: "Accordium contract is not configured." }, { status: 503 });
     const body = await request.json() as { functionName?: string; args?: Encoded[] };
     const functionName = String(body.functionName ?? "");

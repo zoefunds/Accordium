@@ -2,6 +2,11 @@
 
 Accordium is a GenLayer protocol for commitments that carry financial assurance. A verified publisher locks GEN behind a precise statement, names a beneficiary, and selects a monitoring term. Evidence from independent public records is admitted by digest and evaluated under validator consensus. Deterministic policy—not the model—controls state transitions and value.
 
+## StudioNet deployment
+
+- Contract: `0x88B88571D53F9dCE4941339027dF0423D6703F52`
+- Deployment transaction: `0x259c76e01fa41d1d7522f532f6c4ce296e442b42ccedb2c2b853ce7d05883d4f`
+
 ## Why Accordium exists
 
 Public statements are easy to edit and difficult to enforce. Accordium turns a published commitment into a transparent pact with four guarantees:
