@@ -8,6 +8,8 @@
 - Deployer: `0x7452084e1cf767bf19c743051cff27d9f7a87a4d` (`eventweaver`)
 - Exact deployment source commit: `1f1eb03`
 - Contract source SHA-256: `609d726e9c8964c5e68507a2adca0f024c108d4b6df4ed2cad7814ebee3692bb`
+- Production frontend deployment: `dpl_4x1jJMGJWsu2oy46MzNsB69rd1ZH`
+- Production frontend source commit: `44d7b50`
 
 ## Prerequisites
 

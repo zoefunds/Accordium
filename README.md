@@ -9,6 +9,8 @@ Accordium is a GenLayer protocol for commitments that carry financial assurance.
 - Deployment transaction: `0x839a9090673b02bee90b8e6062e2212fbeae740a0896574b3d43846c636abab3`
 - Deployment source commit: `1f1eb03`
 - Contract source SHA-256: `609d726e9c8964c5e68507a2adca0f024c108d4b6df4ed2cad7814ebee3692bb`
+- Production frontend deployment: `dpl_4x1jJMGJWsu2oy46MzNsB69rd1ZH`
+- Production frontend source commit: `44d7b50`
 
 ## Why Accordium exists
 
@@ -82,7 +84,7 @@ npm run verify
 genvm-lint lint contracts/Accordium.py --json
 ```
 
-The current suite contains 23 direct contract tests and 16 frontend tests. `npm run verify` runs ESLint, Vitest, TypeScript checking, and a production Next.js build.
+The current suite contains 27 direct contract tests and 16 frontend tests. `npm run verify` runs ESLint, Vitest, TypeScript checking, and a production Next.js build.
 
 ## Contract surface
 
