@@ -18,14 +18,13 @@ Public statements are easy to edit and difficult to enforce. Accordium turns a p
 - **Publisher authenticity.** A wallet-specific challenge at `/.well-known/accordium.json` binds the wallet staking value to the domain making the statement.
 - **Evidence diversity.** A decision needs agreement from both independently fetched archive adapters: Internet Archive and Arquivo.pt. Each capture is confirmed against the operator's authoritative index metadata.
 - **Narrow intelligence.** Validators classify whether a statement holds, weakened, disappeared, or cannot be determined. They never decide payouts or see a payout instruction.
-- **Capital liveness.** Uncertainty never counts as success and resets a pending breach sequence. Reviews and challenges have hard deadlines and permissionless terminal calls.
+- **Irrevocable assurance.** The publisher cannot cancel a funded pact. Successful term completion requires continuous positive coverage from the opening week through the final week.
 
 ## State model
 
 ```text
-LIVE -- latest verdict HOLDS + term ends ----------------> RELEASED
-  |  -- no HOLDS verdict + term ends --------------------> REFUNDED
-  |  -- publisher cancels before first monitoring ------> REFUNDED
+LIVE -- complete positive coverage + term ends ----------> RELEASED
+  |  -- incomplete, stale, or broken coverage -----------> REFUNDED
   |  -- 3 indeterminate rounds --------------------------> REFUNDED
   +  -- 2 consecutive breach rounds ---------------------> REVIEW
                                                             |
@@ -93,7 +92,7 @@ The current suite contains 23 direct contract tests and 16 frontend tests. `npm 
 - `open_pact(id, domain, origin_url, statement, beneficiary, term_days)`
 - `submit_evidence_round(id, round_id, evidence_json)`
 - `challenge(id)`
-- `cancel_unmonitored(id)`
+- `beneficiary_release(id)`
 - `finalize(id)`
 - `get_pact(id)`, `pact_evidence(id)`, `list_pacts()`, `get_ledger()`, `get_limits()`
 

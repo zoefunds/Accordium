@@ -7,6 +7,8 @@ def test_accordium_deploys_with_empty_conserved_ledger(direct_deploy):
     limits = contract.get_limits()
     assert limits["source_quorum"] == "2"
     assert limits["max_indeterminate_rounds"] == "3"
+    assert limits["max_coverage_gap_seconds"] == "604800"
+    assert limits["min_release_rounds"] == "2"
 
 def test_identity_challenge_is_domain_scoped(direct_deploy):
     contract = direct_deploy("Accordium.py")

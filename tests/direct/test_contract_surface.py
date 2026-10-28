@@ -7,3 +7,6 @@ def test_current_genlayer_interfaces():
 def test_intelligence_cannot_choose_payout():
     classify = SOURCE[SOURCE.index("def _classify"):SOURCE.index("def _validated_finding")]
     assert "stake" not in classify and "beneficiary" not in classify and "emit_transfer" not in classify
+def test_publisher_has_no_unilateral_cancellation_surface():
+    assert "cancel_unmonitored" not in SOURCE
+    assert "def beneficiary_release" in SOURCE

@@ -8,6 +8,7 @@ transition are deterministic. No administrator or oracle key can move escrow.
 from genlayer import *
 from dataclasses import dataclass
 import hashlib
+import base64
 import json
 import re
 from urllib.parse import quote
@@ -32,6 +33,8 @@ MAX_INDETERMINATE_ROUNDS = 3
 IDENTITY_TTL_SECONDS = 2592000
 REVIEW_WINDOW_SECONDS = 604800
 CHALLENGE_WINDOW_SECONDS = 604800
+MAX_COVERAGE_GAP_SECONDS = 604800
+MIN_RELEASE_ROUNDS = 2
 MAX_BODY_CHARS = 180000
 MAX_STATEMENT_CHARS = 500
 
@@ -80,8 +83,10 @@ class Pact:
     expires_at: str
     state: str
     last_round: str
+    first_evidence_at: str
     last_evidence_at: str
     monitoring_rounds: u256
+    coverage_intact: bool
     last_verdict: str
     breach_run: u256
     indeterminate_rounds: u256
@@ -140,6 +145,10 @@ class Accordium(gl.Contract):
         if len(stamp) != 14 or not stamp.isdigit():
             raise gl.vm.UserError("evidence timestamp must be exactly 14 digits")
         return stamp
+
+    def _stamp_iso(self, stamp: str) -> str:
+        value = self._timestamp14(stamp)
+        return value[0:4] + "-" + value[4:6] + "-" + value[6:8] + "T" + value[8:10] + ":" + value[10:12] + ":" + value[12:14] + "Z"
 
     def _domain(self, value: str) -> str:
         domain = str(value or "").strip().lower().rstrip(".")
@@ -253,7 +262,7 @@ class Accordium(gl.Contract):
             raise gl.vm.UserError("the published baseline does not contain a holding commitment")
         self.pacts[key] = Pact(key, sender, payee, domain, url, text,
             hashlib.sha256(text.lower().encode()).hexdigest(), str(baseline["digest"]), now,
-            u256(stake), now, self._add_seconds(now, term * 86400), LIVE, "", "", u256(0), "",
+            u256(stake), now, self._add_seconds(now, term * 86400), LIVE, "", "", "", u256(0), True, "",
             u256(0), u256(0), "", "", u256(0), "", u256(0), u256(0))
         self.pact_ids.append(key)
         self.total_in = u256(int(self.total_in) + stake)
@@ -332,6 +341,15 @@ class Accordium(gl.Contract):
                 return {"ok": False, "timestamp": "", "original": "", "digest": ""}
         return gl.eq_principle.strict_eq(retrieve)
 
+    def _metadata_digest_matches(self, body: str, archive_digest: str) -> bool:
+        digest = str(archive_digest or "").strip().upper()
+        if digest.startswith("SHA1:"): digest = digest[5:]
+        if not digest: return False
+        sha1 = hashlib.sha1(body.encode()).digest()
+        base32 = base64.b32encode(sha1).decode().rstrip("=")
+        hexadecimal = hashlib.sha1(body.encode()).hexdigest().upper()
+        return digest == base32 or digest == hexadecimal
+
     @gl.public.write
     def submit_evidence_round(self, pact_id: str, round_id: str, evidence_json: str) -> str:
         """Admit independently fetched evidence. At least two distinct adapters must agree."""
@@ -369,6 +387,8 @@ class Accordium(gl.Contract):
             fetched = self._fetch_text(locator)
             if not fetched["ok"] or fetched["digest"] != expected_digest:
                 raise gl.vm.UserError("source payload failed digest admission")
+            if not self._metadata_digest_matches(fetched["body"], metadata["digest"]):
+                raise gl.vm.UserError("retrieved payload does not match the archive index digest")
             replay = pact.pact_id + "|" + source + "|" + stamp + "|" + expected_digest
             if replay in self.used_evidence:
                 raise gl.vm.UserError("evidence capture has already been used")
@@ -387,6 +407,14 @@ class Accordium(gl.Contract):
             self.evidence.append(item)
             self.used_evidence[pact.pact_id + "|" + item.source + "|" + item.captured_at + "|" + item.content_digest] = True
             if item.captured_at > round_stamp: round_stamp = item.captured_at
+        coverage_holds = agreed == HOLDS
+        if int(pact.monitoring_rounds) == 0:
+            pact.first_evidence_at = round_stamp
+            first_deadline = self._stamp14(self._add_seconds(pact.created_at, MAX_COVERAGE_GAP_SECONDS))
+            pact.coverage_intact = bool(coverage_holds and round_stamp <= first_deadline)
+        else:
+            next_deadline = self._stamp14(self._add_seconds(self._stamp_iso(pact.last_evidence_at), MAX_COVERAGE_GAP_SECONDS))
+            pact.coverage_intact = bool(pact.coverage_intact and coverage_holds and round_stamp <= next_deadline)
         self.used_rounds[replay_key] = True
         pact.last_round = str(round_id)
         pact.last_evidence_at = round_stamp
@@ -394,12 +422,12 @@ class Accordium(gl.Contract):
         if pact.state == CHALLENGED and agreed == HOLDS:
             amount = int(pact.stake) + int(pact.challenge_bond)
             self._pay(pact.publisher, u256(amount)); pact.returned = u256(amount)
-            pact.state = RELEASED; pact.resolved_at = self._now()
+            pact.state = RELEASED; pact.last_verdict = HOLDS; pact.resolved_at = self._now()
             self.total_out = u256(int(self.total_out) + amount)
         elif pact.state == CHALLENGED and agreed in (WEAKENED, ABSENT):
             amount = int(pact.stake) + int(pact.challenge_bond)
             self._pay(pact.beneficiary, u256(amount)); pact.paid = u256(amount)
-            pact.state = PAID; pact.resolved_at = self._now()
+            pact.state = PAID; pact.last_verdict = agreed; pact.resolved_at = self._now()
             self.total_out = u256(int(self.total_out) + amount)
         elif agreed == HOLDS:
             pact.breach_run = u256(0); pact.indeterminate_rounds = u256(0); pact.last_verdict = HOLDS
@@ -436,18 +464,18 @@ class Accordium(gl.Contract):
         return "challenge opened"
 
     @gl.public.write
-    def cancel_unmonitored(self, pact_id: str) -> str:
-        """Let a publisher recover a live stake before any monitoring round is admitted."""
+    def beneficiary_release(self, pact_id: str) -> str:
+        """Let the beneficiary explicitly release a positively monitored stake."""
         pact = self.pacts[str(pact_id)]
-        if pact.state != LIVE or gl.message.sender_address != pact.publisher:
-            raise gl.vm.UserError("only the publisher may cancel a live pact")
-        if int(pact.monitoring_rounds) != 0:
-            raise gl.vm.UserError("a monitored pact cannot be cancelled")
+        if pact.state != LIVE or gl.message.sender_address != pact.beneficiary:
+            raise gl.vm.UserError("only the beneficiary may release a live pact")
+        if int(pact.monitoring_rounds) == 0 or pact.last_verdict != HOLDS:
+            raise gl.vm.UserError("beneficiary release requires admitted positive evidence")
         amount = int(pact.stake)
         self._pay(pact.publisher, pact.stake)
-        pact.returned = pact.stake; pact.state = REFUNDED; pact.resolved_at = self._now()
+        pact.returned = pact.stake; pact.state = RELEASED; pact.resolved_at = self._now()
         self.total_out = u256(int(self.total_out) + amount); self.pacts[pact.pact_id] = pact
-        return "unmonitored pact cancelled and refunded"
+        return "beneficiary released the positively monitored pact"
 
     @gl.public.write
     def finalize(self, pact_id: str) -> str:
@@ -456,14 +484,17 @@ class Accordium(gl.Contract):
         now = self._now()
         if pact.state == LIVE and now >= pact.expires_at:
             amount = int(pact.stake); self._pay(pact.publisher, u256(amount)); pact.returned = u256(amount)
-            pact.state = RELEASED if pact.last_verdict == HOLDS else REFUNDED
+            fresh_until = self._stamp14(self._add_seconds(self._stamp_iso(pact.last_evidence_at), MAX_COVERAGE_GAP_SECONDS)) if pact.last_evidence_at else ""
+            complete = bool(pact.coverage_intact and int(pact.monitoring_rounds) >= MIN_RELEASE_ROUNDS and
+                pact.last_verdict == HOLDS and fresh_until >= self._stamp14(pact.expires_at))
+            pact.state = RELEASED if complete else REFUNDED
         elif pact.state == REVIEW and now >= pact.review_deadline:
             amount = int(pact.stake); self._pay(pact.beneficiary, u256(amount)); pact.paid = u256(amount); pact.state = PAID
         elif pact.state == CHALLENGED and now >= pact.challenge_deadline:
             # A challenge that fails to produce a conclusive new quorum cannot freeze funds.
             amount = int(pact.stake); bond = int(pact.challenge_bond)
             self._pay(pact.beneficiary, u256(amount)); self._pay(pact.publisher, u256(bond))
-            pact.paid = u256(amount); pact.returned = u256(bond); pact.state = PAID
+            pact.paid = u256(amount); pact.returned = u256(bond); pact.state = PAID; pact.last_verdict = INDETERMINATE
         else:
             raise gl.vm.UserError("no terminal deadline has elapsed")
         moved = int(pact.paid) + int(pact.returned); pact.resolved_at = now
@@ -479,7 +510,8 @@ class Accordium(gl.Contract):
             "baseline_digest": pact.baseline_digest, "baseline_at": pact.baseline_at,
             "created_at": pact.created_at, "expires_at": pact.expires_at, "last_round": pact.last_round,
             "breach_run": str(int(pact.breach_run)), "indeterminate_rounds": str(int(pact.indeterminate_rounds)),
-            "last_evidence_at": pact.last_evidence_at, "monitoring_rounds": str(int(pact.monitoring_rounds)),
+            "first_evidence_at": pact.first_evidence_at, "last_evidence_at": pact.last_evidence_at,
+            "monitoring_rounds": str(int(pact.monitoring_rounds)), "coverage_intact": pact.coverage_intact,
             "last_verdict": pact.last_verdict,
             "review_deadline": pact.review_deadline, "challenge_deadline": pact.challenge_deadline,
             "resolved_at": pact.resolved_at, "paid": str(int(pact.paid)), "returned": str(int(pact.returned))}
@@ -510,4 +542,5 @@ class Accordium(gl.Contract):
         return {"source_quorum": str(SOURCE_QUORUM), "breach_run": str(BREACH_RUN),
                 "max_indeterminate_rounds": str(MAX_INDETERMINATE_ROUNDS),
                 "identity_ttl_seconds": str(IDENTITY_TTL_SECONDS),
-                "review_window_seconds": str(REVIEW_WINDOW_SECONDS), "max_body_chars": str(MAX_BODY_CHARS)}
+                "review_window_seconds": str(REVIEW_WINDOW_SECONDS), "max_body_chars": str(MAX_BODY_CHARS),
+                "max_coverage_gap_seconds": str(MAX_COVERAGE_GAP_SECONDS), "min_release_rounds": str(MIN_RELEASE_ROUNDS)}

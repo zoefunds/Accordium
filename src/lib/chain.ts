@@ -15,7 +15,8 @@ export type ChainPact = {
   created_at: string; expires_at: string; last_round: string; breach_run: string;
   indeterminate_rounds: string; review_deadline: string; challenge_deadline: string;
   resolved_at: string; paid: string; returned: string;
-  baseline_digest: string; baseline_at: string; last_evidence_at: string; monitoring_rounds: string; last_verdict: string;
+  baseline_digest: string; baseline_at: string; first_evidence_at: string; last_evidence_at: string;
+  monitoring_rounds: string; coverage_intact: boolean; last_verdict: string;
 };
 export type ChainEvidence = { round_id:string; source:string; target_url:string; locator:string; captured_at:string; digest:string; verdict:string; excerpt:string };
 export type Ledger = { total_in: string; total_out: string; currently_locked: string; pacts: string };

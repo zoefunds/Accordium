@@ -9,8 +9,10 @@
 - Archive metadata timestamps must fall within the monitoring term.
 - Round identifiers and source/timestamp/digest tuples are consumed once.
 - Retrieved content must match the submitted SHA-256 digest.
+- Retrieved content must also match the archive index's SHA-1 payload digest.
 - Model or archive disagreement is treated as indeterminate and resets consecutive breach progress.
-- Escrow cannot remain indefinitely in an uncertainty or challenge state, and an unmonitored pact cannot be released as successful.
+- The publisher has no unilateral cancellation path after funding.
+- Release at term requires complete positive coverage: opening-week evidence, weekly-or-better cadence, final-week freshness, at least two rounds, and no non-positive round.
 - During a challenged breach, unresolved evidence pays the stake to the beneficiary and returns only the challenge bond to the publisher.
 - No owner, guardian, fee receiver, or upgrade key exists.
 
@@ -24,7 +26,7 @@ The two archive operators may still share upstream captures or both be unavailab
 
 ## Regression coverage
 
-Executable direct tests cover wallet-bound identity, byte-body web responses, baseline admission, metadata substitution, digest replay under a new round ID, chronological evidence, consecutive breach reset, successful and unsuccessful challenges, both deadlines, native transfers, cancellation refunds, and ledger conservation. Frontend tests cover wrong-network switching, visible wallet errors, locator binding, SSRF controls, response limits, and finalized transaction rollback presentation.
+Executable direct tests cover wallet-bound identity, byte-body web responses, baseline admission, metadata substitution, archive-index digest mismatch, digest replay under a new round ID, chronological evidence, coverage gaps and freshness, consecutive breach reset, successful and unsuccessful challenges, both deadlines, beneficiary-authorized release, native transfers, and ledger conservation. Frontend tests cover wrong-network switching, visible wallet errors, locator binding, SSRF controls, response limits, and finalized transaction rollback presentation.
 
 ## Reporting
 
