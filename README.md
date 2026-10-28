@@ -8,6 +8,8 @@ Accordium is a GenLayer protocol for commitments that carry financial assurance.
 - Contract: `0x5a21fFd6d5f2010A31Da99e655A5d709C3b7f706`
 - Deployment transaction: `0x8f5f2f2323396334c97b81fc87b961ce3a6ceff9ace3ba1a2edeb67e70768256`
 - Deployment source commit: `910711c`
+- Contract source SHA-256: `f0fdba86fc6f4a67b74682ea1c864009f34a3e5a820d559e9c58e2539987c79f`
+- Verification pact: `STUDIONET-VERIFY-20261028` (`REFUNDED`, ledger fully conserved)
 
 ## Why Accordium exists
 
@@ -21,15 +23,19 @@ Public statements are easy to edit and difficult to enforce. Accordium turns a p
 ## State model
 
 ```text
-                        +----------- challenge -----------+
-                        |                                  v
-LIVE -- breach quorum -> REVIEW -- deadline ----------> PAID
- |                         |                           CHALLENGED
- |                         +-- no challenge              |
- +-- term complete -------------------------------> RELEASED
- |
- +-- 3 indeterminate rounds ----------------------> REFUNDED
-                         CHALLENGED -- unresolved --> PAID stake + returned bond
+LIVE -- latest verdict HOLDS + term ends ----------------> RELEASED
+  |  -- no HOLDS verdict + term ends --------------------> REFUNDED
+  |  -- publisher cancels before first monitoring ------> REFUNDED
+  |  -- 3 indeterminate rounds --------------------------> REFUNDED
+  +  -- 2 consecutive breach rounds ---------------------> REVIEW
+                                                            |
+                  review deadline, no challenge ------------+--> PAID
+                  publisher adds 10% bond ----------------------> CHALLENGED
+                                                                  |
+                  fresh HOLDS quorum -----------------------------> RELEASED
+                  fresh breach quorum ----------------------------> PAID
+                  deadline / 3 indeterminate rounds --------------> PAID stake
+                                                                  + returned bond
 ```
 
 Every funded path ends in `PAID`, `RELEASED`, or `REFUNDED`. No privileged account can withdraw, pause, or redirect escrow.
@@ -41,9 +47,9 @@ contracts/Accordium.py      deployable intelligent contract
 contracts/policy.py         pure, directly tested policy kernel
 src/app                     Next.js registry and onboarding experience
 src/components              independent interface components
-tests/direct                contract invariants and policy tests
-tests/frontend              presentation helper tests
-docs                        architecture, threat model, and operations
+tests/direct                executable contract lifecycle and invariant tests
+tests/frontend              wallet, transaction, evidence, and SSRF regressions
+docs                        architecture, security, deployment, and release evidence
 ```
 
 The deployable contract stays focused on storage, GenLayer consensus calls, and settlement. Pure quorum, liveness, and accounting rules live in a small module that can be audited without a VM.
@@ -73,11 +79,12 @@ Copy `.env.example` to `.env.local` and add the deployed address.
 ## Verification
 
 ```bash
-python -m pytest
-npm test
-npm run lint
-npm run build
+python3 -m pytest tests/direct -q
+npm run verify
+genvm-lint lint contracts/Accordium.py --json
 ```
+
+The current suite contains 23 direct contract tests and 16 frontend tests. `npm run verify` runs ESLint, Vitest, TypeScript checking, and a production Next.js build.
 
 ## Contract surface
 
@@ -90,4 +97,4 @@ npm run build
 - `finalize(id)`
 - `get_pact(id)`, `pact_evidence(id)`, `list_pacts()`, `get_ledger()`, `get_limits()`
 
-See [Architecture](docs/ARCHITECTURE.md), [Security](docs/SECURITY.md), and [Deployment](docs/DEPLOYMENT.md) before deploying.
+See [Architecture](docs/ARCHITECTURE.md), [Security](docs/SECURITY.md), [Deployment](docs/DEPLOYMENT.md), and [Release verification](docs/VERIFICATION.md).
