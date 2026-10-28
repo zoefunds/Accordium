@@ -30,9 +30,10 @@ Validators retrieved the wallet-specific proof at `https://accordium-eight.verce
 ## Independent archive captures
 
 - Wayback capture: `20261028065828`
-- Arquivo.pt recording: pending initiation
+- Arquivo.pt finalized recording: `20261028070954`
+- Arquivo.pt replay reference: `https://arquivo.pt/wayback/20261028070954/https://accordium-eight.vercel.app/commitment`
 
-The Wayback capture was completed after pact creation. A fresh Arquivo.pt recording must also be completed and become available through its public CDX/replay index before an evidence-admission or settlement transaction can be claimed. Accordium rejects missing or unindexed captures rather than weakening origin, timestamp, wire-digest, or decoded-content admission.
+Both recordings were completed after pact creation. Arquivo.pt reports that its finalized recording will become available at the replay reference above, but it must also appear through the public CDX/replay index before an evidence-admission or settlement transaction can be claimed. Accordium rejects missing or unindexed captures rather than weakening origin, timestamp, wire-digest, or decoded-content admission.
 
 ## Reproduction
 
@@ -41,7 +42,7 @@ python3 scripts/verify_archive_round.py \
   --origin https://accordium-eight.vercel.app/commitment \
   --baseline-sha256 640de92c0e5898a5211def9813208a9323033512ae86cacb436bf2c5f06574cf \
   --wayback-stamp 20261028065828 \
-  --arquivo-stamp REPLACE_AFTER_RECORDING
+  --arquivo-stamp 20261028070954
 python3 -m pytest tests/direct -q
 npm ci
 npm run verify
