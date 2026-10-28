@@ -33,9 +33,9 @@ Validators retrieved the wallet-specific proof at `https://accordium-eight.verce
 - Wayback capture: `20261028013212`
 - Wayback index digest: `L6DMMDBE6WJH6B3YN3P5KECNDUQ2O25Z`
 - Wayback Save Page Now job: `spn2-f488cc62601ceb9682f65d6cc58dcdf60c0adcd4` (`success`, HTTP 200)
-- Arquivo.pt capture request: `20261028013223`
+- Arquivo.pt finalized recording: `20261028053813`
 
-Both captures were requested after pact creation. The Wayback capture is indexed. Arquivo.pt accepted the capture request but has not yet exposed it through its public CDX/replay index, so no evidence-admission or settlement transaction is claimed here until that independent metadata is retrievable. Accordium rejects an unindexed capture rather than weakening origin, timestamp, or content-identity admission.
+Both captures were completed after pact creation. The Wayback capture is indexed. Arquivo.pt finalized the browser recording and issued its replay timestamp, but has not yet exposed it through its public CDX/replay index, so no evidence-admission or settlement transaction is claimed here until that independent metadata is retrievable. Accordium rejects an unindexed capture rather than weakening origin, timestamp, or content-identity admission.
 
 ## Reproduction
 
