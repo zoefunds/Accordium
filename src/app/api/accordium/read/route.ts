@@ -4,7 +4,7 @@ import type { CalldataEncodable } from "genlayer-js/types";
 
 export const runtime = "nodejs";
 const endpoint = process.env.NEXT_PUBLIC_GENLAYER_ENDPOINT ?? "https://studio.genlayer.com/api";
-const deployedContract = "0x9641BA0a9682739b9869070681BfeB09681a6c14" as const;
+const deployedContract = "0xF3B6F8CD79F1D2CB9B17519737e5B38197241803" as const;
 const allowed = new Set(["list_pacts", "get_pact", "pact_evidence", "get_ledger", "get_limits"]);
 type Encoded = string | number | boolean | null | Encoded[] | { __accordiumBigInt: string } | { [key: string]: Encoded };
 function decode(value: Encoded): CalldataEncodable {

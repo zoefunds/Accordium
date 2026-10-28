@@ -5,7 +5,7 @@ import { fetchBoundedArchive, validateArchiveLocator } from "@/lib/safe-evidence
 
 export const runtime = "nodejs";
 const endpoint = process.env.NEXT_PUBLIC_GENLAYER_ENDPOINT ?? "https://studio.genlayer.com/api";
-const fallback = "0x9641BA0a9682739b9869070681BfeB09681a6c14" as const;
+const fallback = "0xF3B6F8CD79F1D2CB9B17519737e5B38197241803" as const;
 
 export async function POST(request: Request) {
   try {

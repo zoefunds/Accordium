@@ -3,13 +3,12 @@
 ## Current StudioNet release
 
 - Application: `https://accordium-eight.vercel.app`
-- Contract: `0x9641BA0a9682739b9869070681BfeB09681a6c14`
-- Transaction: `0x839a9090673b02bee90b8e6062e2212fbeae740a0896574b3d43846c636abab3`
+- Contract: `0xF3B6F8CD79F1D2CB9B17519737e5B38197241803`
+- Transaction: `0x6c8e6a1548b6429a23211838230b69611f4b7acca5afda474a99cf18e3bda293`
 - Deployer: `0x7452084e1cf767bf19c743051cff27d9f7a87a4d` (`eventweaver`)
-- Exact deployment source commit: `1f1eb03`
-- Contract source SHA-256: `609d726e9c8964c5e68507a2adca0f024c108d4b6df4ed2cad7814ebee3692bb`
-- Production frontend deployment: `dpl_4x1jJMGJWsu2oy46MzNsB69rd1ZH`
-- Production frontend source commit: `44d7b50`
+- Exact deployment source commit: `fe9d36d`
+- Contract source SHA-256: `e8814a86b066b6a9c47b0b8959ff15e4374e9f675fda8be15e586b43ba003338`
+- Production frontend deployment: `dpl_EAwvovYTqG6fxBBa2NuyhWeZhWz8`
 
 ## Prerequisites
 
@@ -35,7 +34,7 @@ Deploy `contracts/Accordium.py` with the Studio CLI or Studio interface. Wait fo
 The live frontend uses:
 
 ```text
-NEXT_PUBLIC_ACCORDIUM_CONTRACT=0x9641BA0a9682739b9869070681BfeB09681a6c14
+NEXT_PUBLIC_ACCORDIUM_CONTRACT=0xF3B6F8CD79F1D2CB9B17519737e5B38197241803
 NEXT_PUBLIC_GENLAYER_ENDPOINT=https://studio.genlayer.com/api
 ```
 

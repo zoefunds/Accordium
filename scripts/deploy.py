@@ -20,6 +20,9 @@ def main() -> None:
     if not match:
         raise SystemExit("Deployment finalized but no contract address was found in CLI output.\n" + output)
     address = match.group(1)
+    tx_match = re.search(r'Transaction Hash[^0-9a-fA-F]*(0x[a-fA-F0-9]{64})', output, re.IGNORECASE)
+    if not tx_match:
+        raise SystemExit("Deployment finalized but no transaction hash was found in CLI output.\n" + output)
     current = ENV.read_text() if ENV.exists() else ""
     line = f"NEXT_PUBLIC_ACCORDIUM_CONTRACT={address}"
     if "NEXT_PUBLIC_ACCORDIUM_CONTRACT=" in current:
@@ -28,6 +31,7 @@ def main() -> None:
         current = current.rstrip() + "\n" + line + "\n"
     ENV.write_text(current.lstrip())
     print(f"ACCORDIUM_CONTRACT={address}")
+    print(f"ACCORDIUM_DEPLOYMENT_TX={tx_match.group(1)}")
 
 if __name__ == "__main__":
     main()
