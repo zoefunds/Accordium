@@ -3,12 +3,11 @@
 ## Current StudioNet release
 
 - Application: `https://accordium-eight.vercel.app`
-- Contract: `0x5a21fFd6d5f2010A31Da99e655A5d709C3b7f706`
-- Transaction: `0x8f5f2f2323396334c97b81fc87b961ce3a6ceff9ace3ba1a2edeb67e70768256`
+- Contract: `0x9641BA0a9682739b9869070681BfeB09681a6c14`
+- Transaction: `0x839a9090673b02bee90b8e6062e2212fbeae740a0896574b3d43846c636abab3`
 - Deployer: `0x7452084e1cf767bf19c743051cff27d9f7a87a4d` (`eventweaver`)
-- Exact deployment source commit: `910711c`
-- Contract source SHA-256: `f0fdba86fc6f4a67b74682ea1c864009f34a3e5a820d559e9c58e2539987c79f`
-- Production frontend release: `e7e605e`
+- Exact deployment source commit: `1f1eb03`
+- Contract source SHA-256: `609d726e9c8964c5e68507a2adca0f024c108d4b6df4ed2cad7814ebee3692bb`
 
 ## Prerequisites
 
@@ -34,7 +33,7 @@ Deploy `contracts/Accordium.py` with the Studio CLI or Studio interface. Wait fo
 The live frontend uses:
 
 ```text
-NEXT_PUBLIC_ACCORDIUM_CONTRACT=0x5a21fFd6d5f2010A31Da99e655A5d709C3b7f706
+NEXT_PUBLIC_ACCORDIUM_CONTRACT=0x9641BA0a9682739b9869070681BfeB09681a6c14
 NEXT_PUBLIC_GENLAYER_ENDPOINT=https://studio.genlayer.com/api
 ```
 
@@ -46,6 +45,6 @@ NEXT_PUBLIC_GENLAYER_ENDPOINT=https://studio.genlayer.com/api
 - Publish the byte-for-byte deployed source hash, deployment transaction, and frontend commit.
 - Monitor `total_in - total_out` against the contract balance.
 
-## Current operational proof
+## Operational proof
 
-The `eventweaver` wallet completed domain challenge creation, validator-mediated identity verification, a funded pact creation, and a native refund on StudioNet. Pact `STUDIONET-VERIFY-20261028` is terminal in `REFUNDED`; `get_ledger()` reports one unit received, one returned, and zero locked. Transaction hashes and reproduction commands are in [VERIFICATION.md](VERIFICATION.md).
+Finalized deployment, identity, archive-adjudication, and evidence-driven settlement transaction hashes are maintained in [VERIFICATION.md](VERIFICATION.md).

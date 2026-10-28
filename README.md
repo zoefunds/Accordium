@@ -5,11 +5,10 @@ Accordium is a GenLayer protocol for commitments that carry financial assurance.
 ## StudioNet deployment
 
 - Live application: `https://accordium-eight.vercel.app`
-- Contract: `0x5a21fFd6d5f2010A31Da99e655A5d709C3b7f706`
-- Deployment transaction: `0x8f5f2f2323396334c97b81fc87b961ce3a6ceff9ace3ba1a2edeb67e70768256`
-- Deployment source commit: `910711c`
-- Contract source SHA-256: `f0fdba86fc6f4a67b74682ea1c864009f34a3e5a820d559e9c58e2539987c79f`
-- Verification pact: `STUDIONET-VERIFY-20261028` (`REFUNDED`, ledger fully conserved)
+- Contract: `0x9641BA0a9682739b9869070681BfeB09681a6c14`
+- Deployment transaction: `0x839a9090673b02bee90b8e6062e2212fbeae740a0896574b3d43846c636abab3`
+- Deployment source commit: `1f1eb03`
+- Contract source SHA-256: `609d726e9c8964c5e68507a2adca0f024c108d4b6df4ed2cad7814ebee3692bb`
 
 ## Why Accordium exists
 
