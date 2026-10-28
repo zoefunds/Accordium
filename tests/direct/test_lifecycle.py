@@ -1,4 +1,4 @@
-import base64, hashlib, json, re
+import base64, gzip, hashlib, json, re
 from urllib.parse import quote
 ORIGIN="https://example.com/promise"
 STATEMENT="This concrete public commitment remains in force for every customer."
@@ -62,6 +62,15 @@ def test_archive_index_digest_must_match_retrieved_payload(direct_deploy,direct_
     direct_vm.mock_web("^"+re.escape(wayback)+"$",{"body":body}); direct_vm.mock_web("^"+re.escape(arquivo)+"$",{"body":body})
     claims=[{"source":"WAYBACK","target_url":ORIGIN,"locator":wayback,"digest":digest},{"source":"ARQUIVO_PT","target_url":ORIGIN,"locator":arquivo,"digest":digest}]
     with direct_vm.expect_revert("archive index digest"): c.submit_evidence_round("PACT-1","R1",json.dumps(claims))
+
+def test_archive_wire_digest_and_decoded_content_digest_are_separate(direct_deploy,direct_vm):
+    c=direct_deploy("Accordium.py"); url="https://archive.example/capture"
+    wire=gzip.compress(STATEMENT.encode())
+    direct_vm.mock_web("^"+re.escape(url)+"$",{"body":wire})
+    fetched=c._fetch_text(url)
+    assert fetched["ok"] is True and fetched["body"]==STATEMENT
+    assert fetched["archive_digest"]==base64.b32encode(hashlib.sha1(wire).digest()).decode().rstrip("=")
+    assert fetched["digest"]==hashlib.sha256(STATEMENT.encode()).hexdigest()
 
 def test_capture_cannot_be_replayed_under_a_new_round_id(direct_deploy,direct_vm,direct_alice,direct_bob):
     c=direct_deploy("Accordium.py"); identity_and_open(c,direct_vm,direct_alice,direct_bob)

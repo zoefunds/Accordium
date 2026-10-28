@@ -40,6 +40,11 @@ Both captures were completed after pact creation. The Wayback capture is indexed
 ## Reproduction
 
 ```bash
+python3 scripts/verify_archive_round.py \
+  --origin https://accordium-eight.vercel.app/commitment \
+  --baseline-sha256 dc9a3786a5df6cfee5dc167f4dbb1221cdca2d2d694b5b74da8782eacc47d121 \
+  --wayback-stamp 20261028013212 \
+  --arquivo-stamp 20261028053813
 python3 -m pytest tests/direct -q
 npm ci
 npm run verify
@@ -48,6 +53,8 @@ genlayer receipt 0x839a9090673b02bee90b8e6062e2212fbeae740a0896574b3d43846c636ab
 genlayer code 0x9641BA0a9682739b9869070681BfeB09681a6c14
 shasum -a 256 contracts/Accordium.py
 ```
+
+The archive verifier is read-only and exits nonzero unless both operator indexes return exactly one HTTP 200 record for the pact origin and capture timestamp, each archived wire payload matches its indexed SHA-1 digest, and each bounded decoded UTF-8 replay matches the on-chain baseline SHA-256. This distinction is required for gzip captures. The verifier requires no wallet or private key.
 
 The GenVM AST safety lint passes all three checks with no warnings. StudioNet compilation, validator execution, agreement, and finalization succeeded with the pinned dependency and exact source above.
 

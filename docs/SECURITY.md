@@ -9,7 +9,7 @@
 - Archive metadata timestamps must fall within the monitoring term.
 - Round identifiers and source/timestamp/digest tuples are consumed once.
 - Retrieved content must match the submitted SHA-256 digest.
-- Retrieved content must also match the archive index's SHA-1 payload digest.
+- Archived wire bytes must match the archive index's SHA-1 payload digest; bounded decoded UTF-8 content must independently match the submitted SHA-256 used for evaluation.
 - Model or archive disagreement is treated as indeterminate and resets consecutive breach progress.
 - The publisher has no unilateral cancellation path after funding.
 - Release at term requires complete positive coverage: opening-week evidence, weekly-or-better cadence, final-week freshness, at least two rounds, and no non-positive round.
@@ -26,7 +26,7 @@ The two archive operators may still share upstream captures or both be unavailab
 
 ## Regression coverage
 
-Executable direct tests cover wallet-bound identity, byte-body web responses, baseline admission, metadata substitution, archive-index digest mismatch, digest replay under a new round ID, chronological evidence, coverage gaps and freshness, consecutive breach reset, successful and unsuccessful challenges, both deadlines, beneficiary-authorized release, native transfers, and ledger conservation. Frontend tests cover wrong-network switching, visible wallet errors, locator binding, SSRF controls, response limits, and finalized transaction rollback presentation.
+Executable direct tests cover wallet-bound identity, byte-body web responses, baseline admission, compressed archive wire-digest separation, metadata substitution, archive-index digest mismatch, digest replay under a new round ID, chronological evidence, coverage gaps and freshness, consecutive breach reset, successful and unsuccessful challenges, both deadlines, beneficiary-authorized release, native transfers, and ledger conservation. Frontend tests cover wrong-network switching, visible wallet errors, locator binding, SSRF controls, response limits, and finalized transaction rollback presentation.
 
 ## Reporting
 

@@ -84,7 +84,7 @@ npm run verify
 genvm-lint lint contracts/Accordium.py --json
 ```
 
-The current suite contains 27 direct contract tests and 16 frontend tests. `npm run verify` runs ESLint, Vitest, TypeScript checking, and a production Next.js build.
+The current suite contains 32 direct contract and archive-verifier tests and 16 frontend tests. `npm run verify` runs ESLint, Vitest, TypeScript checking, and a production Next.js build. The read-only `scripts/verify_archive_round.py` command in the release verification document reproduces archive metadata and payload binding without wallet access, including compressed archive payloads.
 
 ## Contract surface
 

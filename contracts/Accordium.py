@@ -9,6 +9,7 @@ from genlayer import *
 from dataclasses import dataclass
 import hashlib
 import base64
+import gzip
 import json
 import re
 from urllib.parse import quote
@@ -175,10 +176,19 @@ class Accordium(gl.Contract):
     def _fetch_text(self, url: str) -> dict:
         def retrieve() -> dict:
             response = gl.nondet.web.request(url, method="GET", headers={"Accept-Encoding": "identity"})
-            body = self._response_text(response, MAX_BODY_CHARS)
-            if not body:
-                return {"ok": False, "body": "", "digest": ""}
-            return {"ok": True, "body": body, "digest": hashlib.sha256(body.encode()).hexdigest()}
+            wire = bytes(response.body or b"")
+            if response.status != 200 or not wire or len(wire) > MAX_BODY_CHARS:
+                return {"ok": False, "body": "", "digest": "", "archive_digest": ""}
+            try:
+                decoded = gzip.decompress(wire) if wire[:2] == b"\x1f\x8b" else wire
+                if len(decoded) > MAX_BODY_CHARS:
+                    return {"ok": False, "body": "", "digest": "", "archive_digest": ""}
+                body = decoded.decode("utf-8")
+            except Exception:
+                return {"ok": False, "body": "", "digest": "", "archive_digest": ""}
+            archive_digest = base64.b32encode(hashlib.sha1(wire).digest()).decode().rstrip("=")
+            return {"ok": True, "body": body, "digest": hashlib.sha256(body.encode()).hexdigest(),
+                "archive_digest": archive_digest}
         return gl.eq_principle.strict_eq(retrieve)
 
     @gl.public.write
@@ -341,14 +351,10 @@ class Accordium(gl.Contract):
                 return {"ok": False, "timestamp": "", "original": "", "digest": ""}
         return gl.eq_principle.strict_eq(retrieve)
 
-    def _metadata_digest_matches(self, body: str, archive_digest: str) -> bool:
+    def _metadata_digest_matches(self, fetched_digest: str, archive_digest: str) -> bool:
         digest = str(archive_digest or "").strip().upper()
         if digest.startswith("SHA1:"): digest = digest[5:]
-        if not digest: return False
-        sha1 = hashlib.sha1(body.encode()).digest()
-        base32 = base64.b32encode(sha1).decode().rstrip("=")
-        hexadecimal = hashlib.sha1(body.encode()).hexdigest().upper()
-        return digest == base32 or digest == hexadecimal
+        return bool(digest) and digest == str(fetched_digest or "").strip().upper()
 
     @gl.public.write
     def submit_evidence_round(self, pact_id: str, round_id: str, evidence_json: str) -> str:
@@ -387,7 +393,7 @@ class Accordium(gl.Contract):
             fetched = self._fetch_text(locator)
             if not fetched["ok"] or fetched["digest"] != expected_digest:
                 raise gl.vm.UserError("source payload failed digest admission")
-            if not self._metadata_digest_matches(fetched["body"], metadata["digest"]):
+            if not self._metadata_digest_matches(fetched["archive_digest"], metadata["digest"]):
                 raise gl.vm.UserError("retrieved payload does not match the archive index digest")
             replay = pact.pact_id + "|" + source + "|" + stamp + "|" + expected_digest
             if replay in self.used_evidence:
