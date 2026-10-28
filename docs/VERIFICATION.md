@@ -11,6 +11,16 @@
 
 The contract source fetched back from StudioNet was byte-for-byte identical to `contracts/Accordium.py` at the deployment commit. The finalized receipt reported three agreeing validators and no disagreeing validator.
 
+## Finalized live lifecycle
+
+- Identity challenge: `0x40a5ab27e790266cd11a40f6ec9ed5a6602e11a1f79ef622dd30e49a68513f68`
+- Wallet-bound identity verification: `0x8587957323db0988e3fb6b89f7ca5ae6d808ab6efd765a15648aa7c2cb70535e`
+- Funded pact creation: `0x1d7042668c9e6a53cfc98d9e43200f13810d3ba40e5c52c02f1818fbbf212c2f`
+- Native refund through `cancel_unmonitored`: `0xcde509ca19c8e317b8a1d66c986296ed21895030fd0cb8e17900c04a370cff13`
+- Verification pact: `STUDIONET-VERIFY-20261028`
+
+Validators retrieved the wallet-specific proof at `https://accordium-eight.vercel.app/.well-known/accordium.json`, admitted the live baseline at `https://accordium-eight.vercel.app/commitment`, and finalized a funded pact. The cancellation then emitted the native refund to the publisher. The on-chain ledger reports `total_in = 1`, `total_out = 1`, and `currently_locked = 0`.
+
 ## Reproduction
 
 ```bash
