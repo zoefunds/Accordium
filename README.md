@@ -13,9 +13,9 @@ Accordium is a GenLayer protocol for commitments that carry financial assurance.
 Public statements are easy to edit and difficult to enforce. Accordium turns a published commitment into a transparent pact with four guarantees:
 
 - **Publisher authenticity.** A wallet-specific challenge at `/.well-known/accordium.json` binds the wallet staking value to the domain making the statement.
-- **Evidence diversity.** A decision needs agreement from at least two distinct adapters: Internet Archive, Arquivo.pt, or the identity-bound live origin.
+- **Evidence diversity.** A decision needs agreement from both independently fetched archive adapters: Internet Archive and Arquivo.pt. Each capture is confirmed against the operator's authoritative index metadata.
 - **Narrow intelligence.** Validators classify whether a statement holds, weakened, disappeared, or cannot be determined. They never decide payouts or see a payout instruction.
-- **Capital liveness.** Three indeterminate rounds trigger a safety refund. Reviews and challenges have hard deadlines and permissionless terminal calls.
+- **Capital liveness.** Uncertainty never counts as success and resets a pending breach sequence. Reviews and challenges have hard deadlines and permissionless terminal calls.
 
 ## State model
 
@@ -28,6 +28,7 @@ LIVE -- breach quorum -> REVIEW -- deadline ----------> PAID
  +-- term complete -------------------------------> RELEASED
  |
  +-- 3 indeterminate rounds ----------------------> REFUNDED
+                         CHALLENGED -- unresolved --> PAID stake + returned bond
 ```
 
 Every funded path ends in `PAID`, `RELEASED`, or `REFUNDED`. No privileged account can withdraw, pause, or redirect escrow.
@@ -84,6 +85,7 @@ npm run build
 - `open_pact(id, domain, origin_url, statement, beneficiary, term_days)`
 - `submit_evidence_round(id, round_id, evidence_json)`
 - `challenge(id)`
+- `cancel_unmonitored(id)`
 - `finalize(id)`
 - `get_pact(id)`, `pact_evidence(id)`, `list_pacts()`, `get_ledger()`, `get_limits()`
 

@@ -15,7 +15,7 @@
 
 ## Adversarial inputs
 
-Archived documents are untrusted. The prompt explicitly marks their content as evidence, caps the text length, and requests a strict finite verdict. Evidence locators are restricted to canonical Internet Archive and Arquivo.pt paths that embed both a capture timestamp and the pact's exact URL. Live-origin evidence must use the exact identity-bound source URL.
+Archived documents are untrusted. The prompt explicitly marks their content as evidence, caps the text length, and requests a strict finite verdict. Evidence locators are restricted to canonical Internet Archive and Arquivo.pt paths that embed both a capture timestamp and the pact's exact URL. The contract confirms the timestamp, original URL, and successful status against the archive operator's capture index. The preparation API independently authorizes the on-chain origin, rejects private DNS results and off-host redirects, and enforces a streaming response limit.
 
 ## Operational assumptions
 

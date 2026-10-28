@@ -10,6 +10,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 import re
+from urllib.parse import quote
 
 LIVE = "LIVE"
 REVIEW = "REVIEW"
@@ -81,6 +82,7 @@ class Pact:
     last_round: str
     last_evidence_at: str
     monitoring_rounds: u256
+    last_verdict: str
     breach_run: u256
     indeterminate_rounds: u256
     review_deadline: str
@@ -150,14 +152,23 @@ class Accordium(gl.Contract):
 
     def _pay(self, receiver: Address, amount: u256) -> None:
         if int(amount) > 0:
-            gl.message.emit_transfer(receiver, amount)
+            gl.get_contract_at(receiver).emit_transfer(value=amount, on="finalized")
+
+    def _response_text(self, response, limit: int) -> str:
+        body = response.body
+        if response.status != 200 or body is None or len(body) > limit:
+            return ""
+        try:
+            return bytes(body).decode("utf-8")
+        except Exception:
+            return ""
 
     def _fetch_text(self, url: str) -> dict:
         def retrieve() -> dict:
             response = gl.nondet.web.request(url, method="GET", headers={"Accept-Encoding": "identity"})
-            if response.status != 200 or len(response.text) > MAX_BODY_CHARS:
+            body = self._response_text(response, MAX_BODY_CHARS)
+            if not body:
                 return {"ok": False, "body": "", "digest": ""}
-            body = str(response.text)
             return {"ok": True, "body": body, "digest": hashlib.sha256(body.encode()).hexdigest()}
         return gl.eq_principle.strict_eq(retrieve)
 
@@ -183,9 +194,10 @@ class Accordium(gl.Contract):
         expected = identity.challenge
         def fetch_and_check() -> dict:
             response = gl.nondet.web.request(url, method="GET", headers={})
-            if response.status != 200 or len(response.text) > 4096:
+            body = self._response_text(response, 4096)
+            if not body:
                 return {"ok": False, "digest": ""}
-            payload = json.loads(response.text)
+            payload = json.loads(body)
             canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
             return {"ok": str(payload.get("wallet", "")).lower() == sender.as_hex.lower() and payload.get("challenge") == expected,
                     "digest": hashlib.sha256(canonical.encode()).hexdigest()}
@@ -241,7 +253,7 @@ class Accordium(gl.Contract):
             raise gl.vm.UserError("the published baseline does not contain a holding commitment")
         self.pacts[key] = Pact(key, sender, payee, domain, url, text,
             hashlib.sha256(text.lower().encode()).hexdigest(), str(baseline["digest"]), now,
-            u256(stake), now, self._add_seconds(now, term * 86400), LIVE, "", "", u256(0),
+            u256(stake), now, self._add_seconds(now, term * 86400), LIVE, "", "", u256(0), "",
             u256(0), u256(0), "", "", u256(0), "", u256(0), u256(0))
         self.pact_ids.append(key)
         self.total_in = u256(int(self.total_in) + stake)
@@ -272,8 +284,6 @@ class Accordium(gl.Contract):
             prefix = "https://web.archive.org/web/"
         elif source == "ARQUIVO_PT":
             prefix = "https://arquivo.pt/wayback/"
-        elif source == "SIGNED_ORIGIN":
-            return ""
         else:
             raise gl.vm.UserError("unknown evidence adapter")
         if not locator.startswith(prefix):
@@ -287,6 +297,40 @@ class Accordium(gl.Contract):
         if remainder != pact.origin_url:
             raise gl.vm.UserError("archive evidence is not bound to the pact origin URL")
         return stamp
+
+    def _capture_metadata(self, source: str, stamp: str, origin_url: str) -> dict:
+        encoded = quote(origin_url, safe="")
+        if source == "WAYBACK":
+            url = ("https://web.archive.org/cdx/search/cdx?url=" + encoded +
+                "&output=json&fl=timestamp,original,statuscode,digest&filter=statuscode:200&from=" +
+                stamp + "&to=" + stamp + "&limit=1&gzip=false")
+        elif source == "ARQUIVO_PT":
+            url = ("https://arquivo.pt/wayback/cdx?url=" + encoded +
+                "&output=json&fl=url,timestamp,status,digest&filter=status:200&from=" +
+                stamp + "&to=" + stamp + "&limit=1")
+        else:
+            raise gl.vm.UserError("unknown evidence adapter")
+        def retrieve() -> dict:
+            response = gl.nondet.web.request(url, method="GET", headers={"Accept-Encoding": "identity"})
+            text = self._response_text(response, 16384)
+            if not text: return {"ok": False, "timestamp": "", "original": "", "digest": ""}
+            try:
+                payload = json.loads(text)
+                if source == "WAYBACK":
+                    if not isinstance(payload, list) or len(payload) != 2:
+                        return {"ok": False, "timestamp": "", "original": "", "digest": ""}
+                    header, row = payload[0], payload[1]
+                    item = {str(header[i]): row[i] for i in range(len(header))}
+                    original, status = str(item.get("original", "")), str(item.get("statuscode", ""))
+                else:
+                    item = payload[0] if isinstance(payload, list) else payload
+                    original, status = str(item.get("url", "")), str(item.get("status", ""))
+                timestamp = str(item.get("timestamp", ""))
+                return {"ok": timestamp == stamp and original == origin_url and status == "200",
+                    "timestamp": timestamp, "original": original, "digest": str(item.get("digest", ""))}
+            except Exception:
+                return {"ok": False, "timestamp": "", "original": "", "digest": ""}
+        return gl.eq_principle.strict_eq(retrieve)
 
     @gl.public.write
     def submit_evidence_round(self, pact_id: str, round_id: str, evidence_json: str) -> str:
@@ -302,26 +346,23 @@ class Accordium(gl.Contract):
         if replay_key in self.used_rounds:
             raise gl.vm.UserError("evidence round already consumed")
         claims = json.loads(evidence_json)
-        if not isinstance(claims, list) or len(claims) < SOURCE_QUORUM or len(claims) > 3:
-            raise gl.vm.UserError("evidence round requires two or three sources")
+        if not isinstance(claims, list) or len(claims) != SOURCE_QUORUM:
+            raise gl.vm.UserError("evidence round requires exactly two independent archives")
         sources = {}
         verdicts = {}
         staged = []
         for claim in claims:
             source = str(claim["source"])
-            if source not in ("WAYBACK", "ARQUIVO_PT", "SIGNED_ORIGIN") or source in sources:
+            if source not in ("WAYBACK", "ARQUIVO_PT") or source in sources:
                 raise gl.vm.UserError("evidence adapters must be unique and approved")
             locator = str(claim["locator"])
             target_url = str(claim.get("target_url", ""))
             if target_url != pact.origin_url:
                 raise gl.vm.UserError("evidence target does not match the pact origin")
-            stamp = self._timestamp14(str(claim["captured_at"]))
-            locator_stamp = self._locator_timestamp(source, locator, pact)
-            if source == "SIGNED_ORIGIN":
-                if locator != pact.origin_url:
-                    raise gl.vm.UserError("signed-origin evidence must use the exact pact origin")
-            elif locator_stamp != stamp:
-                raise gl.vm.UserError("evidence timestamp does not match its archive locator")
+            stamp = self._locator_timestamp(source, locator, pact)
+            metadata = self._capture_metadata(source, stamp, pact.origin_url)
+            if not metadata["ok"]:
+                raise gl.vm.UserError("archive metadata did not confirm the exact capture")
             if stamp < self._stamp14(pact.created_at) or stamp > self._stamp14(pact.expires_at):
                 raise gl.vm.UserError("evidence timestamp is outside the pact term")
             expected_digest = str(claim["digest"]).lower()
@@ -361,16 +402,20 @@ class Accordium(gl.Contract):
             pact.state = PAID; pact.resolved_at = self._now()
             self.total_out = u256(int(self.total_out) + amount)
         elif agreed == HOLDS:
-            pact.breach_run = u256(0); pact.indeterminate_rounds = u256(0)
+            pact.breach_run = u256(0); pact.indeterminate_rounds = u256(0); pact.last_verdict = HOLDS
         elif agreed in (WEAKENED, ABSENT):
-            pact.breach_run = u256(int(pact.breach_run) + 1); pact.indeterminate_rounds = u256(0)
+            pact.breach_run = u256(int(pact.breach_run) + 1); pact.indeterminate_rounds = u256(0); pact.last_verdict = agreed
             if int(pact.breach_run) >= BREACH_RUN:
                 pact.state = REVIEW; pact.review_deadline = self._add_seconds(self._now(), REVIEW_WINDOW_SECONDS)
         else:
-            pact.indeterminate_rounds = u256(int(pact.indeterminate_rounds) + 1)
+            pact.breach_run = u256(0); pact.indeterminate_rounds = u256(int(pact.indeterminate_rounds) + 1); pact.last_verdict = INDETERMINATE
             if int(pact.indeterminate_rounds) >= MAX_INDETERMINATE_ROUNDS:
-                amount = int(pact.stake) + int(pact.challenge_bond); self._pay(pact.publisher, u256(amount))
-                pact.returned = u256(amount); pact.state = REFUNDED; pact.resolved_at = self._now()
+                if pact.state == CHALLENGED:
+                    self._pay(pact.beneficiary, pact.stake); self._pay(pact.publisher, pact.challenge_bond)
+                    pact.paid = pact.stake; pact.returned = pact.challenge_bond; pact.state = PAID
+                else:
+                    self._pay(pact.publisher, pact.stake); pact.returned = pact.stake; pact.state = REFUNDED
+                amount = int(pact.stake) + int(pact.challenge_bond); pact.resolved_at = self._now()
                 self.total_out = u256(int(self.total_out) + amount)
         self.pacts[pact.pact_id] = pact
         return "round accepted: " + agreed
@@ -391,13 +436,27 @@ class Accordium(gl.Contract):
         return "challenge opened"
 
     @gl.public.write
+    def cancel_unmonitored(self, pact_id: str) -> str:
+        """Let a publisher recover a live stake before any monitoring round is admitted."""
+        pact = self.pacts[str(pact_id)]
+        if pact.state != LIVE or gl.message.sender_address != pact.publisher:
+            raise gl.vm.UserError("only the publisher may cancel a live pact")
+        if int(pact.monitoring_rounds) != 0:
+            raise gl.vm.UserError("a monitored pact cannot be cancelled")
+        amount = int(pact.stake)
+        self._pay(pact.publisher, pact.stake)
+        pact.returned = pact.stake; pact.state = REFUNDED; pact.resolved_at = self._now()
+        self.total_out = u256(int(self.total_out) + amount); self.pacts[pact.pact_id] = pact
+        return "unmonitored pact cancelled and refunded"
+
+    @gl.public.write
     def finalize(self, pact_id: str) -> str:
         """Permissionless terminal path; every escrowed unit is paid or returned."""
         pact = self.pacts[str(pact_id)]
         now = self._now()
         if pact.state == LIVE and now >= pact.expires_at:
             amount = int(pact.stake); self._pay(pact.publisher, u256(amount)); pact.returned = u256(amount)
-            pact.state = RELEASED if int(pact.monitoring_rounds) > 0 else REFUNDED
+            pact.state = RELEASED if pact.last_verdict == HOLDS else REFUNDED
         elif pact.state == REVIEW and now >= pact.review_deadline:
             amount = int(pact.stake); self._pay(pact.beneficiary, u256(amount)); pact.paid = u256(amount); pact.state = PAID
         elif pact.state == CHALLENGED and now >= pact.challenge_deadline:
@@ -421,6 +480,7 @@ class Accordium(gl.Contract):
             "created_at": pact.created_at, "expires_at": pact.expires_at, "last_round": pact.last_round,
             "breach_run": str(int(pact.breach_run)), "indeterminate_rounds": str(int(pact.indeterminate_rounds)),
             "last_evidence_at": pact.last_evidence_at, "monitoring_rounds": str(int(pact.monitoring_rounds)),
+            "last_verdict": pact.last_verdict,
             "review_deadline": pact.review_deadline, "challenge_deadline": pact.challenge_deadline,
             "resolved_at": pact.resolved_at, "paid": str(int(pact.paid)), "returned": str(int(pact.returned))}
 

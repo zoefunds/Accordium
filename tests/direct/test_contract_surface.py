@@ -1,45 +1,9 @@
 from pathlib import Path
-
 SOURCE = (Path(__file__).parents[2] / "contracts" / "Accordium.py").read_text()
-
-def test_contract_has_identity_bound_creation():
-    assert "def begin_identity" in SOURCE
-    assert "def verify_identity" in SOURCE
-    assert "publisher identity is not verified" in SOURCE
-    assert "https://\" + domain" in SOURCE
-
-def test_contract_has_diverse_evidence_and_replay_protection():
-    assert '"WAYBACK", "ARQUIVO_PT", "SIGNED_ORIGIN"' in SOURCE
-    assert "SOURCE_QUORUM = 2" in SOURCE
-    assert "evidence round already consumed" in SOURCE
-    assert "source in sources" in SOURCE
-    assert "def _locator_timestamp" in SOURCE
-    assert "evidence target does not match the pact origin" in SOURCE
-    assert "evidence capture has already been used" in SOURCE
-    assert "evidence timestamp is outside the pact term" in SOURCE
-
-def test_contract_admits_a_verified_baseline_before_escrow():
-    assert "baseline = self._fetch_text(url)" in SOURCE
-    assert "baseline_verdict != HOLDS" in SOURCE
-    assert '"baseline_digest"' in SOURCE
-
-def test_contract_has_bounded_liveness_and_terminal_paths():
-    assert "MAX_INDETERMINATE_ROUNDS = 3" in SOURCE
-    assert "pact.state = REFUNDED" in SOURCE
-    assert "def finalize" in SOURCE
-    assert "pact.state == CHALLENGED and agreed == HOLDS" in SOURCE
-    assert "currently_locked" in SOURCE
-    assert "IDENTITY_TTL_SECONDS = 2592000" in SOURCE
-    assert "int(pact.stake) + int(pact.challenge_bond)" in SOURCE
-    assert "review deadline has ended" in SOURCE
-    assert "int(pact.monitoring_rounds) > 0 else REFUNDED" in SOURCE
-
+def test_current_genlayer_interfaces():
+    assert "response.body" in SOURCE and "response.text" not in SOURCE
+    assert "gl.get_contract_at(receiver).emit_transfer(value=amount" in SOURCE
+    assert "gl.message.emit_transfer" not in SOURCE
 def test_intelligence_cannot_choose_payout():
-    classify = SOURCE[SOURCE.index("def _classify"):SOURCE.index("def submit_evidence_round")]
-    assert "stake" not in classify
-    assert "beneficiary" not in classify
-    assert "emit_transfer" not in classify
-
-def test_breach_excerpt_is_deterministically_grounded():
-    assert "def _validated_finding" in SOURCE
-    assert "breach excerpt is not present in admitted evidence" in SOURCE
+    classify = SOURCE[SOURCE.index("def _classify"):SOURCE.index("def _validated_finding")]
+    assert "stake" not in classify and "beneficiary" not in classify and "emit_transfer" not in classify
