@@ -10,6 +10,9 @@ Accordium is a GenLayer protocol for commitments that carry financial assurance.
 - Deployment source commit: `fe9d36d`
 - Contract source SHA-256: `e8814a86b066b6a9c47b0b8959ff15e4374e9f675fda8be15e586b43ba003338`
 - Production frontend deployment: `dpl_EAwvovYTqG6fxBBa2NuyhWeZhWz8`
+- Production frontend source commit: `bc5e395`
+
+The live verification pact is `STUDIONET-WIRE-20261028`. Wallet-bound identity, funding, and post-creation captures at Wayback (`20261028065828`) and Arquivo.pt (`20261028070954`) are complete. Evidence admission remains intentionally pending until Arquivo.pt publishes the latter recording through its public CDX/replay index; no settlement transaction is claimed yet.
 
 ## Why Accordium exists
 

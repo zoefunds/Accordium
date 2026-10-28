@@ -9,6 +9,7 @@
 - Exact deployment source commit: `fe9d36d`
 - Contract source SHA-256: `e8814a86b066b6a9c47b0b8959ff15e4374e9f675fda8be15e586b43ba003338`
 - Production frontend deployment: `dpl_EAwvovYTqG6fxBBa2NuyhWeZhWz8`
+- Production frontend source commit: `bc5e395`
 
 ## Prerequisites
 
@@ -29,7 +30,7 @@ genvm-lint lint contracts/Accordium.py --json
 git rev-parse HEAD
 ```
 
-Deploy `contracts/Accordium.py` with the Studio CLI or Studio interface. Wait for `FINALIZED`, fetch the deployed source with `genlayer code`, and compare its SHA-256 with the reviewed local file. Set `NEXT_PUBLIC_ACCORDIUM_CONTRACT` to the finalized address, rebuild the frontend, and verify the production `/api/accordium/read` endpoint reports the same ledger as a direct contract read.
+Deploy `contracts/Accordium.py` with the Studio CLI or Studio interface. Wait for `FINALIZED`, fetch the deployed source with `genlayer code`, and compare it with the reviewed local file after normalizing trailing newlines added by CLI formatting. Record the SHA-256 of the exact local deployment source. Set `NEXT_PUBLIC_ACCORDIUM_CONTRACT` to the finalized address, rebuild the frontend, and verify the production `/api/accordium/read` endpoint reports the same ledger as a direct contract read.
 
 The live frontend uses:
 
@@ -43,9 +44,9 @@ NEXT_PUBLIC_GENLAYER_ENDPOINT=https://studio.genlayer.com/api
 - Pin the GenLayer dependency hash already declared in the contract.
 - Restrict each evidence adapter to its canonical HTTPS host.
 - Exercise identity proof, two-source agreement, split verdict, refund, review, challenge, and each terminal payout on the target network.
-- Publish the byte-for-byte deployed source hash, deployment transaction, and frontend commit.
+- Publish the reviewed local source hash, normalized deployed-source comparison, deployment transaction, and frontend commit.
 - Monitor `total_in - total_out` against the contract balance.
 
 ## Operational proof
 
-Finalized deployment, identity, archive-adjudication, and evidence-driven settlement transaction hashes are maintained in [VERIFICATION.md](VERIFICATION.md).
+Finalized deployment, identity, and funding transaction hashes are maintained in [VERIFICATION.md](VERIFICATION.md). That document also records archive availability and will add evidence-adjudication and settlement hashes only after both independent indexes pass the fail-closed verifier.

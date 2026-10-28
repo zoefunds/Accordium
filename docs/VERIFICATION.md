@@ -10,6 +10,7 @@
 - Contract SHA-256: `e8814a86b066b6a9c47b0b8959ff15e4374e9f675fda8be15e586b43ba003338`
 - Production application: `https://accordium-eight.vercel.app`
 - Production frontend deployment: `dpl_EAwvovYTqG6fxBBa2NuyhWeZhWz8`
+- Production frontend source commit: `bc5e395`
 
 The contract source fetched from StudioNet matches `contracts/Accordium.py` at the deployment commit (ignoring trailing newlines added by the CLI formatter). The finalized deployment receipt reports validator majority agreement.
 
@@ -34,6 +35,8 @@ Validators retrieved the wallet-specific proof at `https://accordium-eight.verce
 - Arquivo.pt replay reference: `https://arquivo.pt/wayback/20261028070954/https://accordium-eight.vercel.app/commitment`
 
 Both recordings were completed after pact creation. Arquivo.pt reports that its finalized recording will become available at the replay reference above, but it must also appear through the public CDX/replay index before an evidence-admission or settlement transaction can be claimed. Accordium rejects missing or unindexed captures rather than weakening origin, timestamp, wire-digest, or decoded-content admission.
+
+Latest read-only verification at `2026-10-28T07:26:25Z`: Wayback metadata and payload validation passed; Arquivo.pt CDX still returned no exact indexed capture. The pact therefore remains `LIVE` with zero admitted monitoring rounds and the conserved ledger remains `total_in = 1`, `total_out = 0`, `currently_locked = 1`. No evidence or settlement transaction is represented as complete.
 
 ## Reproduction
 
