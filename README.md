@@ -5,8 +5,9 @@ Accordium is a GenLayer protocol for commitments that carry financial assurance.
 ## StudioNet deployment
 
 - Live application: `https://accordium-eight.vercel.app`
-- Contract: `0x1b24bbB2c8441E38Df159EbE1bB7a6F80DD515ce`
-- Deployment transaction: `0x3b9ab56bd8994d25b2cd4b1298005cca84674815d9121dffd08b37c52d395d61`
+- Contract: `0x5a21fFd6d5f2010A31Da99e655A5d709C3b7f706`
+- Deployment transaction: `0x8f5f2f2323396334c97b81fc87b961ce3a6ceff9ace3ba1a2edeb67e70768256`
+- Deployment source commit: `910711c`
 
 ## Why Accordium exists
 
