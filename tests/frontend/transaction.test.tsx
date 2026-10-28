@@ -8,7 +8,7 @@ const chain = vi.hoisted(() => ({
 }));
 
 vi.mock("../../src/lib/chain", () => ({
-  CONTRACT_ADDRESS: "0x5a21fFd6d5f2010A31Da99e655A5d709C3b7f706",
+  CONTRACT_ADDRESS: "0x9641BA0a9682739b9869070681BfeB09681a6c14",
   writeContract: chain.writeContract,
   waitFinalized: chain.waitFinalized,
 }));

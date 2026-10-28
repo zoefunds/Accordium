@@ -2,29 +2,40 @@
 
 ## StudioNet release
 
-- Contract: `0x5a21fFd6d5f2010A31Da99e655A5d709C3b7f706`
-- Deployment transaction: `0x8f5f2f2323396334c97b81fc87b961ce3a6ceff9ace3ba1a2edeb67e70768256`
+- Contract: `0x9641BA0a9682739b9869070681BfeB09681a6c14`
+- Deployment transaction: `0x839a9090673b02bee90b8e6062e2212fbeae740a0896574b3d43846c636abab3`
 - Finalized result: `MAJORITY_AGREE`
 - Deployer: `0x7452084e1cf767bf19c743051cff27d9f7a87a4d` (`eventweaver`)
-- Deployment source commit: `910711c`
-- Contract SHA-256: `f0fdba86fc6f4a67b74682ea1c864009f34a3e5a820d559e9c58e2539987c79f`
-
-The contract source fetched back from StudioNet was byte-for-byte identical to `contracts/Accordium.py` at the deployment commit. The finalized receipt reported three agreeing validators and no disagreeing validator.
-
+- Deployment source commit: `1f1eb03`
+- Contract SHA-256: `609d726e9c8964c5e68507a2adca0f024c108d4b6df4ed2cad7814ebee3692bb`
 - Production application: `https://accordium-eight.vercel.app`
-- Production frontend release: `e7e605e`
+- Production frontend deployment: `dpl_4x1jJMGJWsu2oy46MzNsB69rd1ZH`
+- Production frontend source commit: `44d7b50`
 
-## Finalized live lifecycle
+The contract source fetched from StudioNet is byte-for-byte identical to `contracts/Accordium.py` at the deployment commit. The finalized deployment receipt reports validator agreement.
 
-- Identity challenge: `0x40a5ab27e790266cd11a40f6ec9ed5a6602e11a1f79ef622dd30e49a68513f68`
-- Wallet-bound identity verification: `0x8587957323db0988e3fb6b89f7ca5ae6d808ab6efd765a15648aa7c2cb70535e`
-- Funded pact creation: `0x1d7042668c9e6a53cfc98d9e43200f13810d3ba40e5c52c02f1818fbbf212c2f`
-- Native refund through `cancel_unmonitored`: `0xcde509ca19c8e317b8a1d66c986296ed21895030fd0cb8e17900c04a370cff13`
-- Verification pact: `STUDIONET-VERIFY-20261028`
+## Finalized live identity and funding
 
-Validators retrieved the wallet-specific proof at `https://accordium-eight.vercel.app/.well-known/accordium.json`, admitted the live baseline at `https://accordium-eight.vercel.app/commitment`, and finalized a funded pact. The cancellation then emitted the native refund to the publisher. The on-chain ledger reports `total_in = 1`, `total_out = 1`, and `currently_locked = 0`.
+- Identity challenge: `0x27d409ceb3b89738dd71db4c052fd5f05977dd3637f2f3904424528677eef69d`
+- Wallet-bound identity verification: `0x12c999f4f9f5bca55234c3c71b2f0d86cba5e32f7a8500e59c5a9ef486b614f9`
+- Funded pact creation: `0xc6cf9e1d043dd474a6afe8086802c68fa86f33ee3fba49db44e4b66c23cb2a55`
+- Verification pact: `STUDIONET-ARCHIVE-20261028`
+- Stake: `1 wei`
+- Publisher: `0x7452084e1cf767bf19c743051cff27d9f7a87a4d`
+- Beneficiary: `0x1c2e587043568239b2fcaec5f96f278eb134b7f5`
+- Baseline admitted at: `2026-10-28T01:29:47.446155Z`
+- Baseline SHA-256: `dc9a3786a5df6cfee5dc167f4dbb1221cdca2d2d694b5b74da8782eacc47d121`
 
-The production read API independently returned the same terminal pact and conserved ledger after deployment.
+Validators retrieved the wallet-specific proof at `https://accordium-eight.vercel.app/.well-known/accordium.json`, verified the live commitment at `https://accordium-eight.vercel.app/commitment`, and finalized an irrevocable funded pact. Its initial ledger is `total_in = 1`, `total_out = 0`, and `currently_locked = 1`.
+
+## Independent archive captures
+
+- Wayback capture: `20261028013212`
+- Wayback index digest: `L6DMMDBE6WJH6B3YN3P5KECNDUQ2O25Z`
+- Wayback Save Page Now job: `spn2-f488cc62601ceb9682f65d6cc58dcdf60c0adcd4` (`success`, HTTP 200)
+- Arquivo.pt capture request: `20261028013223`
+
+Both captures were requested after pact creation. The Wayback capture is indexed. Arquivo.pt accepted the capture request but has not yet exposed it through its public CDX/replay index, so no evidence-admission or settlement transaction is claimed here until that independent metadata is retrievable. Accordium rejects an unindexed capture rather than weakening origin, timestamp, or content-identity admission.
 
 ## Reproduction
 
@@ -33,16 +44,16 @@ python3 -m pytest tests/direct -q
 npm ci
 npm run verify
 genvm-lint lint contracts/Accordium.py --json
-genlayer receipt 0x8f5f2f2323396334c97b81fc87b961ce3a6ceff9ace3ba1a2edeb67e70768256
-genlayer code 0x5a21fFd6d5f2010A31Da99e655A5d709C3b7f706
+genlayer receipt 0x839a9090673b02bee90b8e6062e2212fbeae740a0896574b3d43846c636abab3
+genlayer code 0x9641BA0a9682739b9869070681BfeB09681a6c14
 shasum -a 256 contracts/Accordium.py
 ```
 
-The GenVM AST safety lint passed with no warnings. The linter's optional SDK semantic-validation phase could not locate the contract's pinned SDK artifact in its newest artifact bundle, so it is not represented as passed. StudioNet compilation, execution, validator agreement, and finalization succeeded with that exact dependency and source.
+The GenVM AST safety lint passes all three checks with no warnings. StudioNet compilation, validator execution, agreement, and finalization succeeded with the pinned dependency and exact source above.
 
 ## Verified test baseline
 
-- Direct contract tests: 23 passed.
+- Direct contract tests: 27 passed.
 - Frontend tests: 16 passed across five test files.
 - ESLint: passed.
 - TypeScript and production Next.js build: passed.
